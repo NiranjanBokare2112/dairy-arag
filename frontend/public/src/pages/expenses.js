@@ -15,6 +15,7 @@ import { navigate } from '../core/router.js';
 import { dateField, bindDateFields } from '../core/datepicker.js';
 import { rangeOf, filterCard, bindRangeBar } from '../core/rangebar.js';
 import { pager, pgAttrs, bindPagers } from '../core/pager.js';
+import { shrinkImage } from '../core/image.js';
 
 const PER_PAGE = 6; // खर्चाची यादी: 6 a page (D-128)
 
@@ -123,7 +124,7 @@ export default {
     f.categoryId.addEventListener('change', () => { if (!ed) f.monthly.checked = f.categoryId.selectedOptions[0]?.dataset.monthly === '1'; });
     f.photoFile.addEventListener('change', async () => {
       const file = f.photoFile.files[0]; if (!file) return;
-      try { photo = await shrinkPhoto(file, 1280); const img = $('[data-photo-img]', f); img.src = photo; img.hidden = false; $('[data-photo-rm]', f).hidden = false; $('[data-photo-label]', f).textContent = t('exp.photoChange'); }
+      try { photo = await shrinkImage(file, 1280); const img = $('[data-photo-img]', f); img.src = photo; img.hidden = false; $('[data-photo-rm]', f).hidden = false; $('[data-photo-label]', f).textContent = t('exp.photoChange'); }
       catch { toast(t('exp.photoBad'), 'err'); }
     });
     on(f, 'click', '[data-photo-rm]', () => { photo = ''; const img = $('[data-photo-img]', f); img.hidden = true; img.removeAttribute('src'); $('[data-photo-rm]', f).hidden = true; $('[data-photo-label]', f).textContent = t('exp.photoAdd'); f.photoFile.value = ''; });
@@ -165,19 +166,3 @@ export default {
     }
   },
 };
-
-/** Shrink a bill photo (longest side `max` px, JPEG) so the desktop's disk and backups stay small. */
-function shrinkPhoto(file, max) {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => {
-      const k = Math.min(1, max / Math.max(img.width, img.height));
-      const cv = Object.assign(document.createElement('canvas'), { width: Math.round(img.width * k), height: Math.round(img.height * k) });
-      cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
-      URL.revokeObjectURL(img.src);
-      resolve(cv.toDataURL('image/jpeg', 0.7));
-    };
-    img.onerror = () => reject(new Error('invalid'));
-    img.src = URL.createObjectURL(file);
-  });
-}

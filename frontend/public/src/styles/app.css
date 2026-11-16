@@ -1383,3 +1383,26 @@ label.field > .hint :is(a, button), label.field > .name-choices button { pointer
 .dp-mon:disabled { color: #B5C0CF; background: #F6F8FB; cursor: not-allowed; }
 /* D-131: scrolling inside a calendar never moves the page behind */
 .dp-pop { overscroll-behavior: contain; }
+/* D-136: staff login by mobile + OTP */
+.otp-sent { margin: 4px 0 8px; font-weight: 700; color: var(--green, #2E7D32); }
+.otp-test { margin: 0 0 10px; text-align: left; font-weight: 700; letter-spacing: .02em; }
+.otp-links { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+.otp-links .link-btn:disabled { color: var(--muted); text-decoration: none; cursor: default; }
+/* D-138: help tickets — who raised it, SLA clocks, screenshots */
+.tk-who { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 12px; padding: 12px 14px;
+  border: 1px solid var(--line-soft); border-radius: 12px; background: var(--blue-50); }
+.tk-who-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.tk-sla { display: grid; gap: 6px; margin-top: 10px; }
+.tk-sla-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 14.5px; }
+.tk-sla-row > span:first-child { color: var(--muted); min-width: 170px; }
+.tk-row-top .tag .ic, .tk-row-top .tag svg { vertical-align: -2px; }
+.tk-att-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.tk-thumbs { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.tk-thumbs:empty { display: none; }
+.tk-thumb { position: relative; }
+.tk-thumb img { width: 72px; height: 72px; object-fit: cover; border-radius: 10px; border: 1px solid var(--line); display: block; }
+.tk-thumb button { position: absolute; top: -6px; right: -6px; width: 24px; height: 24px; border-radius: 50%; border: 0; background: #B3261E; color: #fff; font-size: 12px; cursor: pointer; }
+.tk-pics { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.tk-pic { padding: 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: #fff; cursor: zoom-in; }
+.tk-pic img { display: block; width: 120px; height: 90px; object-fit: cover; }
+.tk-pic-big img { display: block; max-width: 100%; max-height: 75vh; margin: 0 auto; border-radius: 10px; }

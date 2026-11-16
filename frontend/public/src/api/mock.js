@@ -23,6 +23,7 @@ const DB_KEY = 'arag.db.v2'; // v2: ~3-month demo history with every past period
 const SESSION_KEY = 'arag.session';
 const SESSION_ID_KEY = 'arag.sessionId';
 const MAX_FAILED = 5, LOCK_MINUTES = 10;
+const OTP_TTL_MS = 5 * 60000, OTP_RESEND_MS = 30000, OTP_MAX_TRIES = 5, OTP_PER_HOUR = 5; // D-136
 const SMS_NOTICE_MAX = 140; // a broadcast also sent by SMS stays within 2 Unicode (Marathi) SMS parts (D-72)
 const MAX_FARMER_FAILED = 10; // wrong farmer codes per 10 minutes (per device on the real server) before a pause
 
@@ -67,6 +68,9 @@ function migrate(d) {
   if (!d.counterSales) d.counterSales = buildSeed().counterSales; // D-53
   if (!d.buyers) { const fresh = buildSeed(); Object.assign(d, { buyers: fresh.buyers, buyerSales: fresh.buyerSales, buyerPayments: fresh.buyerPayments, buyerMonths: fresh.buyerMonths }); }
   for (const u of d.users) { u.active ??= true; u.mobile ??= ''; u.createdAt ??= new Date().toISOString(); }
+  // D-136: staff log in with their mobile + OTP — demo staff without a number get a test one
+  d.otps ||= [];
+  if (isDemoData(d)) for (const [id, m] of [['u-op1', '9876501111'], ['u-support', '9876500009']]) { const u = d.users.find((x) => x.id === id); if (u && !u.mobile) u.mobile = m; }
   if (!d.schemes) d.schemes = sampleSchemes(); // D-71
   if ((d.schemeSet || 0) < SCHEME_SET) { // D-92: drop the untouched (नमुना) samples, add the real schemes not yet there
     d.schemes = d.schemes.filter((s) => !(/^sch-[12]$/.test(s.id) && s.title.endsWith('(नमुना)') && (!s.updatedAt || s.updatedAt === s.createdAt)));
@@ -262,8 +266,20 @@ function notifySupport(t, event) {
 }
 function ticketView(t, w) {
   const unread = w && t.unreadFor?.includes(w.key);
-  return { ...clone(t), unread: !!unread, mine: !!w && reporterKey(t) === w.key };
+  return { ...clone(t), unread: !!unread, mine: !!w && reporterKey(t) === w.key, who: reporterInfo(t) };
 }
+/** D-138: who raised it and how to reach them (shown to Bokare support and the owner): fresh from the records. */
+function reporterInfo(t) {
+  const center = db.center?.name || '';
+  if (t.by.kind === 'farmer') {
+    const f = farmerById(t.by.id);
+    return { kind: 'farmer', name: f?.name || t.by.name, code: f?.code ?? null, village: f?.village || '', mobile: f?.mobile || '', whatsapp: !!f?.hasWhatsapp, center };
+  }
+  const u = db.users.find((x) => x.id === t.by.id);
+  return { kind: t.by.kind, name: u?.name || t.by.name, code: null, village: '', mobile: u?.mobile || '', whatsapp: !!u?.mobile, center };
+}
+/** D-138: screenshots / photos on a ticket message — up to 3 small JPEG data URLs (the page shrinks them). */
+const ticketImages = (list) => (Array.isArray(list) ? list.map(photoOf).filter(Boolean).slice(0, 3) : []);
 
 // ---------- change requests (D-108) ----------
 // An operator's or a farmer's change to a farmer's details waits for the owner. Only these fields can be asked for:
@@ -645,6 +661,52 @@ const api = {
   async users({ support = false } = {}) { // D-109: Bokare support has its own login (#/login?as=support), not on the centre's list
     return db.users.filter((u) => u.active !== false && (u.role === 'support') === support).map(({ pin, ...u }) => ({ ...u, pinLength: pin.length }));
   },
+  // ---------- staff login: 4-digit PIN → OTP on that person's WhatsApp (D-137). Test mode: nothing is sent, the OTP is
+  // returned for the screen. The PIN says who it is (PINs are unique); the OTP proves it is their phone. ----------
+  async requestStaffOtp({ pin }) {
+    const p = String(pin || '').trim();
+    if (!/^\d{4}$/.test(p)) throw new ApiError('invalid-pin');
+    const now = Date.now();
+    db.pinFails = (db.pinFails || []).filter((x) => x > now - LOCK_MINUTES * 60000); // wrong PINs (live: per device / IP)
+    if (db.pinFails.length >= MAX_FAILED) throw new ApiError('too-many-attempts');
+    const u = db.users.find((x) => x.pin === p && x.active !== false);
+    if (!u) { db.pinFails.push(now); audit('login-failed', 'user', null, null, { pin: 'unknown', ua: userAgent() }, null); save(); throw new ApiError('bad-pin'); }
+    if (failedRecently(u.id) >= MAX_FAILED) throw new ApiError('too-many-attempts');
+    if (!/^[6-9]\d{9}$/.test(u.mobile || '')) throw new ApiError('no-mobile');
+    const m = u.mobile;
+    const mine = db.otps.filter((o) => o.mobile === m);
+    const last = mine.reduce((a, o) => (o.createdAt > a ? o.createdAt : a), 0);
+    if (now - last < OTP_RESEND_MS) throw new ApiError('otp-wait', { seconds: Math.ceil((OTP_RESEND_MS - (now - last)) / 1000) });
+    if (mine.filter((o) => now - o.createdAt < 3600000).length >= OTP_PER_HOUR) throw new ApiError('too-many-otps');
+    const otp = String(Math.floor(100000 + Math.random() * 900000));
+    db.otps = db.otps.filter((o) => now - o.createdAt < 3600000 && o.mobile !== m).concat(mine.filter((o) => now - o.createdAt < 3600000).map((o) => ({ ...o, used: true })));
+    const rec = { id: uuid(), mobile: m, userId: u.id, otp, createdAt: now, expiresAt: now + OTP_TTL_MS, tries: 0, used: false };
+    db.otps.push(rec);
+    const channel = 'whatsapp'; // live: WhatsApp authentication template to the staff member's registered number
+    audit('otp-sent', 'user', u.id, null, { channel, ua: userAgent() }, u.id); save();
+    return { ref: rec.id, name: u.name, sentTo: 'XXXXXX' + m.slice(-4), channel, resendIn: OTP_RESEND_MS / 1000, validFor: OTP_TTL_MS / 60000, testOtp: otp };
+  },
+  async verifyStaffOtp({ ref, otp }) {
+    const code = String(otp || '').trim();
+    const o = db.otps.find((x) => x.id === ref && !x.used);
+    if (!o) throw new ApiError('otp-expired');
+    if (Date.now() > o.expiresAt) { o.used = true; save(); throw new ApiError('otp-expired'); }
+    if (o.otp !== code) {
+      o.tries += 1; if (o.tries >= OTP_MAX_TRIES) o.used = true;
+      audit('login-failed', 'user', o.userId, null, { otp: true, ua: userAgent() }, o.userId); save();
+      throw new ApiError(o.used ? 'otp-locked' : 'otp-wrong');
+    }
+    const u = db.users.find((x) => x.id === o.userId && x.active !== false);
+    if (!u) throw new ApiError('bad-pin');
+    o.used = true;
+    const s = { id: uuid(), centerId: CENTER_ID, userId: u.id, loginAt: nowIso(), lastSeenAt: nowIso(), logoutAt: null, ua: userAgent(), via: 'pin+otp' };
+    db.sessions.push(s);
+    sessionUserId = u.id; sessionId = s.id;
+    try { localStorage.setItem(SESSION_KEY, u.id); localStorage.setItem(SESSION_ID_KEY, s.id); } catch { /* ignore */ }
+    audit('login', 'user', u.id, null, { ua: s.ua, via: 'pin+otp' }); save();
+    const { pin: _p, ...safe } = u; return safe;
+  },
+  /** Internal / tests only: the login page uses PIN + WhatsApp OTP (D-137). The real backend has no PIN-only login. */
   async login(userId, pin) {
     const u = db.users.find((x) => x.id === userId && x.active !== false);
     if (!u) throw new ApiError('bad-pin');
@@ -782,10 +844,14 @@ const api = {
     const me_ = requireRole('owner');
     const name = String(input.name || '').trim();
     if (!name) throw new ApiError('name-required');
-    if (input.mobile && !/^[6-9]\d{9}$/.test(input.mobile)) throw new ApiError('invalid-mobile');
-    if (input.pin && !/^\d{4,6}$/.test(input.pin)) throw new ApiError('invalid-pin');
+    if (input.pin && !/^\d{4}$/.test(input.pin)) throw new ApiError('invalid-pin'); // D-137: 4 digits, the staff login
+    if (input.pin && db.users.some((u) => u.pin === input.pin && u.id !== input.id && u.active !== false)) throw new ApiError('pin-taken');
     const ex = input.id ? db.users.find((u) => u.id === input.id) : null;
     if (!ex && !input.pin) throw new ApiError('invalid-pin');
+    input = { ...input, mobile: input.mobile ?? ex?.mobile ?? '' }; // editing without a number keeps the old one
+    if (!input.mobile) throw new ApiError('mobile-required'); // D-136: the mobile is the staff login
+    if (!/^[6-9]\d{9}$/.test(input.mobile)) throw new ApiError('invalid-mobile');
+    if (db.users.some((u) => u.mobile === input.mobile && u.id !== input.id && u.active !== false)) throw new ApiError('mobile-taken');
     if (ex && (ex.role === 'owner' || ex.id === me_.id) && input.active === false) throw new ApiError('cannot-disable-owner');
     const before = ex ? (({ pin, ...u }) => u)(ex) : null;
     const rec = ex || { id: 'u-' + uuid().slice(0, 8), centerId: CENTER_ID, role: 'operator', createdAt: nowIso() };
@@ -813,8 +879,9 @@ const api = {
   },
   async changePin(userId, pin) {
     requireRole('owner');
-    if (!/^\d{4,6}$/.test(pin)) throw new ApiError('invalid-pin');
+    if (!/^\d{4}$/.test(pin)) throw new ApiError('invalid-pin'); // D-137: 4 digits, unique — it is the staff login
     const u = db.users.find((x) => x.id === userId); if (!u) throw new ApiError('not-found');
+    if (db.users.some((x) => x.pin === pin && x.id !== userId && x.active !== false)) throw new ApiError('pin-taken');
     u.pin = pin; audit('change-pin', 'user', userId, null, null); save();
   },
 
@@ -1287,7 +1354,7 @@ const api = {
   },
 
   // ---------- help / support tickets (D-109) ----------
-  async createTicket({ category, priority = 'normal', subject, text }) {
+  async createTicket({ category, priority = 'normal', subject, text, images = [] }) {
     const w = whoAsks(); if (!w || w.kind === 'support') throw new ApiError('unauthenticated');
     if (!TICKET_CATS.includes(category)) throw new ApiError('invalid');
     if (!['normal', 'urgent'].includes(priority)) throw new ApiError('invalid');
@@ -1297,7 +1364,7 @@ const api = {
     db.ticketSeq = (db.ticketSeq || 0) + 1;
     const t = { id: 'tk-' + uuid().slice(0, 8), centerId: CENTER_ID, no: 'T-' + String(db.ticketSeq).padStart(4, '0'),
       by: { kind: w.kind, id: w.id, name: w.name }, category, priority, subject: sub, status: 'open',
-      messages: [{ id: uuid().slice(0, 8), by: { kind: w.kind, name: w.name }, text: body, at: nowIso() }],
+      messages: [{ id: uuid().slice(0, 8), by: { kind: w.kind, name: w.name }, text: body, images: ticketImages(images), at: nowIso() }],
       notify: [], unreadFor: [], createdAt: nowIso(), updatedAt: nowIso() };
     notifySupport(t, 'created');
     db.tickets.push(t);
@@ -1317,11 +1384,12 @@ const api = {
     if (t.unreadFor?.includes(w.key)) { t.unreadFor = t.unreadFor.filter((k) => k !== w.key); save(); }
     return ticketView(t, w);
   },
-  async replyTicket(id, text) {
+  async replyTicket(id, text, images = []) {
     const w = whoAsks(); const t = db.tickets.find((x) => x.id === id);
     if (!t || !canSeeTicket(w, t)) throw new ApiError('not-found');
-    const body = String(text || '').trim().slice(0, 2000); if (!body) throw new ApiError('ticket-text-required');
-    t.messages.push({ id: uuid().slice(0, 8), by: { kind: w.kind, name: w.name }, text: body, at: nowIso() });
+    const pics = ticketImages(images);
+    const body = String(text || '').trim().slice(0, 2000) || (pics.length ? '📷' : ''); if (!body) throw new ApiError('ticket-text-required');
+    t.messages.push({ id: uuid().slice(0, 8), by: { kind: w.kind, name: w.name }, text: body, images: pics, at: nowIso() });
     const fromReporter = reporterKey(t) === w.key;
     if (fromReporter) {
       if (['resolved', 'closed', 'waiting'].includes(t.status)) t.status = 'open'; // the reporter answered / it is back

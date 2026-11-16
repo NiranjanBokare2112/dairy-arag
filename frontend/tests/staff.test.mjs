@@ -53,3 +53,30 @@ test('owner adds an operator, who can log in; disabling blocks login and hides f
   assert.ok(!(await api.users()).some((u) => u.id === op.id));
   await assert.rejects(api.saveUser({ id: 'u-owner', name: 'मालक', active: false }), (e) => e.code === 'cannot-disable-owner');
 });
+
+test('staff log in with a 4-digit PIN + OTP on WhatsApp (D-137)', async () => {
+  // PINs: 4 digits, unique; a WhatsApp number is required
+  await api.login('u-owner', '1234');
+  await assert.rejects(api.saveUser({ name: 'नवीन', pin: '55555', mobile: '9876500111' }), (e) => e.code === 'invalid-pin');
+  await assert.rejects(api.saveUser({ name: 'नवीन', pin: '1111', mobile: '9876500111' }), (e) => e.code === 'pin-taken');
+  await assert.rejects(api.saveUser({ name: 'नवीन', pin: '5555' }), (e) => e.code === 'mobile-required');
+  await api.saveUser({ name: 'नवीन ऑपरेटर', pin: '4545', mobile: '9876500111' });
+  await api.logout();
+  // wrong PIN, then the operator: PIN → OTP (shown in test mode) → in
+  await assert.rejects(api.requestStaffOtp({ pin: '0007' }), (e) => e.code === 'bad-pin');
+  await assert.rejects(api.requestStaffOtp({ pin: '12' }), (e) => e.code === 'invalid-pin');
+  const s = await api.requestStaffOtp({ pin: '4545' });
+  assert.equal(s.sentTo, 'XXXXXX0111'); assert.equal(s.channel, 'whatsapp'); assert.equal(s.testOtp.length, 6); assert.ok(s.name);
+  await assert.rejects(api.requestStaffOtp({ pin: '4545' }), (e) => e.code === 'otp-wait'); // resend only after 30 s
+  await assert.rejects(api.verifyStaffOtp({ ref: s.ref, otp: s.testOtp === '000000' ? '111111' : '000000' }), (e) => e.code === 'otp-wrong');
+  const u = await api.verifyStaffOtp({ ref: s.ref, otp: s.testOtp });
+  assert.equal(u.role, 'operator'); assert.equal(u.pin, undefined);
+  await assert.rejects(api.verifyStaffOtp({ ref: s.ref, otp: s.testOtp }), (e) => e.code === 'otp-expired'); // used once only
+  await api.logout();
+  // owner: 5 wrong OTPs cancel it
+  const o = await api.requestStaffOtp({ pin: '1234' });
+  const wrong = o.testOtp === '222222' ? '333333' : '222222';
+  for (let i = 0; i < 4; i++) await assert.rejects(api.verifyStaffOtp({ ref: o.ref, otp: wrong }), (e) => e.code === 'otp-wrong');
+  await assert.rejects(api.verifyStaffOtp({ ref: o.ref, otp: wrong }), (e) => e.code === 'otp-locked');
+  await assert.rejects(api.verifyStaffOtp({ ref: o.ref, otp: o.testOtp }), (e) => e.code === 'otp-expired');
+});

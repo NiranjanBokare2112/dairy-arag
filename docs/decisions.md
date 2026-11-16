@@ -220,3 +220,23 @@ These were chosen while building the frontend. None adds a dependency. Rules mar
 - Owner's decision: go live in the cloud — app and API on **Vercel**, **Supabase** as the main database. Replaces the self-hosted desktop, offline LAN and Cloudflare Tunnel plan of CLAUDE.md §2 (and D-134's "Supabase as the online copy"). Consequences accepted: internet needed at the centre (milk entries wait on the phone if it drops), SMS gateway must be reachable from the cloud or a DLT provider is used, message sending by Vercel Cron, monthly cost (Vercel Pro — Hobby is non-commercial; paid Supabase — free projects pause).
 - Demo link now: Vercel serves `frontend/public` as static files (`vercel.json`, no build). Without the dev server, a browser's first visit loads `demo/demo-data.json` (fictional demo data made by `node scripts/demo/make-demo-snapshot.mjs 2026-11-23`) and then keeps its own changes in that browser only. "Reset demo" in Settings goes back to the same file. The dev server (5173) still shares one copy between devices for local testing.
 
+
+## D-136 — Staff log in with mobile + OTP; login has two options only (2026-11-17)
+- The login page has two options: **कर्मचारी** and **शेतकरी**. No list of staff names any more (was: tap मालक / ऑपरेटर १ + PIN).
+- कर्मचारी (owner, operators, Bokare support): registered mobile → "OTP पाठवा" → 6-digit OTP → in; the number decides who it is and where they land (owner → dashboard, operator → milk collection, support → support inbox). OTP valid 5 minutes, used once, 5 wrong tries cancel it, resend after 30 s, at most 5 OTPs per number per hour; failed tries also count toward the existing 10-minute lock. Unknown or inactive numbers are refused ("कर्मचारी यादीत नाही"). The device remembers its last number.
+- Live: the OTP goes by WhatsApp (an approved **authentication** template), SMS as fallback. Test mode sends nothing and shows the OTP on screen.
+- A staff mobile is now **required and unique** (कर्मचारी settings). The PIN stays only to confirm money actions (approving UPI payouts). `#/login?as=support` now opens the same staff login.
+- शेतकरी login unchanged (farmer code, D-47).
+- The real backend will have no PIN login (`login(userId, pin)` stays in test mode for tests only).
+
+## D-137 — Staff login: 4-digit PIN + OTP on WhatsApp; farmers keep code only (2026-11-17)
+- Replaces D-136's mobile-number step (the 10-digit number was too long to type every time). कर्मचारी: type the **4-digit PIN** → an **OTP is sent on that person's WhatsApp** (their registered number) → type the OTP → in. The PIN says who it is; the OTP proves it is their phone. The screen shows the name and the masked number ("मालक: OTP WhatsApp वर पाठवला (XXXXXX5304)").
+- Staff PINs are exactly **4 digits and unique**; a WhatsApp number is required for every staff member (कर्मचारी settings). OTP rules as in D-136 (5 minutes, once, 5 wrong tries, resend after 30 s, 5 per hour); wrong PINs count toward a 10-minute lock (live: per device / IP).
+- **Farmers: no password** — the farmer code alone, as before (D-47), by the owner's choice.
+- Test mode shows the OTP on screen; live sends a WhatsApp authentication template.
+
+
+## D-138 — Help tickets: who raised it + call, SLA, screenshots (2026-11-17)
+- Bokare support (and the owner on someone else's ticket) sees **who raised it**: name, role (owner / operator / farmer with code and village), centre, mobile — with **कॉल करा** (tel:) and **WhatsApp** (wa.me) buttons. The inbox rows show name, role and mobile too.
+- **SLA**, from the moment a ticket is raised: urgent — first written reply within **2 h**, solved within **24 h**; normal — **8 h** and **72 h**. The clock pauses while the ticket waits for the reporter ("तुमच्या उत्तराची वाट") and stops when it is resolved / closed. Support inbox: most urgent first, badges "उत्तर: 1 तास 20 मि. बाकी" / "वेळ ओलांडली", and a count of tickets past their time. The reporter sees "Bokare सपोर्टचे उत्तर 2 तासांत अपेक्षित". Rules in `lib/sla.js` (tested); targets can be changed there.
+- **Screenshots / photos**: up to 3 per message, when raising a ticket or replying (choose a file, or paste a screenshot with Ctrl+V on a computer); shrunk to ≤1600 px JPEG; shown in the conversation and opened full size on tap. Live: stored as files (Supabase Storage), not in the ticket row.

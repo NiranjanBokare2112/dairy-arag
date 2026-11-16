@@ -10,7 +10,7 @@ Conventions:
 
 | Method | Role | Notes |
 |---|---|---|
-| `users()`, `login(userId, pin)`, `logout()`, `me()` | — | PIN login. The server hashes PINs and rate-limits attempts. |
+| `requestStaffOtp({pin})` → `{ref, name, sentTo, channel}`, `verifyStaffOtp({ref, otp})`, `logout()`, `me()` | — | Staff login (D-137): the 4-digit PIN identifies the person (PINs unique), the OTP goes to their WhatsApp. Was D-136: OTP valid 5 min, single use, 5 tries, resend after 30 s, 5 per hour; sent by WhatsApp authentication template (SMS fallback). The server stores only a hash of the OTP and never returns it. `users()` is owner-only (staff page). No PIN login on the server; the PIN only confirms money actions. |
 | `center()`, `saveCenter(patch)`, `changePin(userId, pin)` | owner (writes) | Covers the cycle length (7 or 10 days), rate rule, daily summary time, SMS cap, Marathi digits on bills, and the public URL. |
 | `farmers({includeInactive})`, `farmer(id)`, `farmerByCode(code)`, `nextFarmerCode()`, `saveFarmer(f)` | owner: add + edit; operator: add new only (D-69) | `farmer(id)` includes `balances`. Aadhaar goes in as 12 digits, is stored encrypted, and only `aadhaarLast4` is returned. |
 | `charts()`, `chart(id)`, `saveChart({milkType, effectiveFrom, fats, snfs, rates, note})`, `quote({...})` | owner (writes) | Charts are immutable versions. `quote` prices an entry without saving it. |

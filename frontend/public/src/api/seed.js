@@ -65,7 +65,7 @@ export function buildSeed(now = new Date()) {
   };
   const users = [
     { id: 'u-owner', centerId: CENTER_ID, name: 'मालक', role: 'owner', pin: '1234', mobile: '9158435304', active: true, createdAt },
-    { id: 'u-op1', centerId: CENTER_ID, name: 'ऑपरेटर १', role: 'operator', pin: '1111', mobile: '', active: true, createdAt },
+    { id: 'u-op1', centerId: CENTER_ID, name: 'ऑपरेटर १', role: 'operator', pin: '1111', mobile: '9876501111', active: true, createdAt }, // D-136: staff log in with mobile + OTP
   ];
   // Demo login history for the last 6 days: operator works both shifts, owner checks in the evening.
   const sessions = [];

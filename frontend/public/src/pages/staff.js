@@ -100,7 +100,8 @@ async function editUser(p, me) {
     <div class="modal-head"><h2>${isNew ? t('staff.add') : t('staff.editTitle', { name: p.name })}</h2></div>
     <div class="modal-body stack">
       <label class="field"><span>${t('common.name')} *</span><input type="text" name="name" value="${p?.name || ''}" autofocus></label>
-      <label class="field"><span>${t('farmers.mobile')}</span><input type="tel" name="mobile" inputmode="tel" maxlength="10" value="${p?.mobile || ''}"></label>
+      <label class="field"><span>${t('staff.loginMobile')} *</span><input type="tel" name="mobile" inputmode="tel" maxlength="10" value="${p?.mobile || ''}" required>
+        <span class="hint">${t('staff.loginMobileHint')}</span></label>
       <label class="field"><span>${isNew ? t('staff.pinNew') : t('staff.pinChange')}</span>
         <input type="password" name="pin" inputmode="numeric" maxlength="6" autocomplete="new-password">
         <span class="hint">${isNew ? t('staff.pinHintNew') : t('staff.pinHintEdit')}</span></label>

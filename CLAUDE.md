@@ -52,6 +52,7 @@ Out of scope for Phase 1 (do not build unless asked): direct analyzer/weighing-s
 
 ## 5. Users and roles
 
+- **Login** (D-137): staff (owner, operators, Bokare support) with a 4-digit PIN + an OTP on their WhatsApp; farmers with their farmer code only (no password). The login page shows only these two options.
 - **Owner (admin)**: everything, settings, rate charts, approvals, reports, dashboard (also remotely via tunnel).
 - **Operator**: collection entry, feed/advance entries, receipts, the tabs the owner allows (D-86). Can add a farmer (D-69); any change to an existing farmer's details goes to the owner for approval (D-108). Cannot change rates or finalized bills.
 - **Farmer**: own read-only page by farmer code (D-47) — milk, bills, UPI payments, doctors, schemes, help; asks for changes to their details, which the owner approves (D-108). Also receives WhatsApp/SMS and bill links.
