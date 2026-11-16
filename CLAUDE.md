@@ -24,7 +24,7 @@ Client project of **Bokare Technologies**. This file is the standing brief: read
 ## 3. Messaging (decided)
 
 - **WhatsApp**: Meta **WhatsApp Cloud API** directly (no paid middleman/BSP). Use approved **utility** templates. Approx cost ₹0.115–0.15 per message (India, 2026) — paid from the client's own Meta account.
-- **Daily summary**: ONE message per farmer per day, after the evening shift (time configurable), with morning + evening litres, Fat, SNF and the day's amount. Not one message per pour.
+- **Per-entry message** (changed by the owner, D-73): as soon as a milk entry is saved, the farmer gets ONE message for that entry (date, shift, milk type, litres, Fat, SNF, rate, amount). An approved correction sends a short correction message. This replaced the evening daily summary.
 - **Bill**: at the end of each bill cycle, send the Marathi **PDF bill** on WhatsApp.
 - **SMS fallback** for farmers without WhatsApp (or when WhatsApp delivery fails): sent from the center's own SIM, which has **100 free SMS/day**, via an **Android phone running an SMS-gateway app** on the LAN (candidate: open-source "SMS Gateway for Android" local-server mode — verify current project/API before use). SMS carries a short summary and, for bills, a link to the bill page instead of a PDF.
   - Enforce a daily SMS cap (default 95) and keep a counter; overflow waits for the next day or goes to an optional DLT SMS gateway if one is configured later.
@@ -39,18 +39,20 @@ Client project of **Bokare Technologies**. This file is the standing brief: read
 3. **Milk collection entry** (shift-wise): farmer code → litres, Fat, SNF → rate and amount auto-filled. Block duplicate entry for same farmer/date/shift/milk type. Corrections need owner approval and are audit-logged. Optional Bluetooth 58 mm thermal receipt.
 4. **Cattle feed & advance ledger**: feed stock in/out, credit sales per farmer, advances with per-cycle installment, running balances.
 5. **Billing**: 7/10-day cycles; gross milk amount − feed − advance installment − previous dues = net payable. Marathi PDF bill (design in `design-assets/bill/`). Generate for all farmers in one action; finalize locks the cycle.
-6. **Payments**: cash or UPI (with UPI reference), payment register, daily cash vs UPI totals, unpaid list.
+6. **Payments**: cash or UPI (with UPI reference), payment register, daily cash vs UPI totals, unpaid list. **UPI payouts (D-107)**: each farmer's UPI ID is checked with ₹1 (bank's name confirmed by the owner); farmers choose when they are paid (daily / on bill date / fixed date / month end); the owner approves the day's list with PIN or sets automatic payouts at a fixed time. Gateway (Cashfree Payouts / RazorpayX) not chosen yet — simulated until then.
 7. **Dairy dispatch & owner dashboard**: litres sent to the dairy per shift with Fat/SNF/rate/amount received; collected vs dispatched (shrinkage); purchase vs sale margin; today's litres by shift and milk type; avg Fat/SNF trend; dues; top/low suppliers.
-8. **Messaging**: daily WhatsApp summary + bill PDF, SMS fallback, outbox with status/retries, message log per farmer.
+8. **Messaging**: WhatsApp message per milk entry (D-73) + bill PDF + notices (D-72), SMS fallback, outbox with status/retries, message log per farmer.
 9. **Branding**: logo, colors and fonts from `design-assets/` used across app, bills, receipts and messages.
+10. **Expenses (खर्च, D-126)**: owner and operator enter centre expenses (monthly ones spread per day, optional bill photo); an operator's change needs the owner; message costs and payout fees are counted automatically; the dashboard shows net profit after expenses.
 
-Out of scope for Phase 1 (do not build unless asked): direct analyzer/weighing-scale integration (Phase 2), dairy-specific report formats, govt subsidy report formats, automated UPI payouts, full accounting/GST/Tally, separate farmer app, multiple centers in production.
+Out of scope for Phase 1 (do not build unless asked): direct analyzer/weighing-scale integration (Phase 2), dairy-specific report formats, govt subsidy report formats, full accounting/GST/Tally, separate farmer app, multiple centers in production.
 
 ## 5. Users and roles
 
 - **Owner (admin)**: everything, settings, rate charts, approvals, reports, dashboard (also remotely via tunnel).
-- **Operator**: collection entry, feed/advance entries, receipts. Cannot change rates or finalized bills.
-- Farmers have no login; they receive WhatsApp/SMS and bill links.
+- **Operator**: collection entry, feed/advance entries, receipts, the tabs the owner allows (D-86). Can add a farmer (D-69); any change to an existing farmer's details goes to the owner for approval (D-108). Cannot change rates or finalized bills.
+- **Farmer**: own read-only page by farmer code (D-47) — milk, bills, UPI payments, doctors, schemes, help; asks for changes to their details, which the owner approves (D-108). Also receives WhatsApp/SMS and bill links.
+- **Bokare support** (D-109): separate login (#/login?as=support, not on the centre's list); answers everyone's help tickets.
 
 ## 6. Engineering rules
 

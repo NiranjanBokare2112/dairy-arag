@@ -20,4 +20,4 @@ frontend/          PWA: operator app + owner dashboard
 scripts/           install/run as Windows service, backup, restore, seed data
 ```
 
-**Status: setup done, development not started.**
+**Status:** the frontend (all Phase 1 screens) is built and runs on a demo mock API — see `frontend/README.md`. The backend is not started.

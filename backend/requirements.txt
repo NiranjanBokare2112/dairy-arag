@@ -1,0 +1,9 @@
+# Python 3.12+ (tested on 3.14). Install: pip install -r requirements.txt
+fastapi>=0.115
+uvicorn[standard]>=0.30
+sqlalchemy>=2.0
+psycopg[binary]>=3.2
+python-dotenv>=1.0
+httpx>=0.27          # WhatsApp Cloud API calls (app/whatsapp.py); also used by the tests
+# tests
+pytest>=8

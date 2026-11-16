@@ -55,7 +55,7 @@ Derived from `CLAUDE.md` §1–6. Tick `[x]` when built **and** tested.
 - [ ] A7.6 Dues; top/low suppliers.
 
 ### A8. Messaging
-- [ ] A8.1 Daily WhatsApp summary per farmer after evening shift (send time configurable).
+- [ ] A8.1 WhatsApp message per milk entry as soon as it is saved; correction message after an approved correction (D-73, replaced the evening daily summary).
 - [ ] A8.2 Bill PDF on WhatsApp at end of cycle.
 - [ ] A8.3 SMS fallback when no WhatsApp or WhatsApp delivery fails; bills via link.
 - [ ] A8.4 Daily SMS cap (default 95) with counter; overflow deferred to next day (or optional DLT gateway).

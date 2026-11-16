@@ -56,3 +56,13 @@ desktop.ini
 .idea/
 *.swp
 *~
+graphify-out/
+
+# Dev server shared test data (D-67)
+frontend/.dev-shared-db.json
+frontend/.dev-shared-db*.json.tmp
+frontend/.dev-shared-db-*.json
+
+# Demo package for another laptop (contains the test data) and generated test-data files
+demo-package/
+scripts/db/test-data-*.json
