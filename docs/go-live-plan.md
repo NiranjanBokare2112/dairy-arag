@@ -9,16 +9,14 @@ Status on 16/11/2026. Written for: the owner (Bokare) to decide the open points;
 - **Real backend (FastAPI):** only read-only parts exist — health, centre, farmers, milk entries, bills, summary, farmer login, WhatsApp delivery reports.
 - **Gap:** the app has **124 operations** (`frontend/public/src/api/mock.js`). Each needs a real `/api/...` endpoint with the same name and data shape (`docs/api-contract.md`). Then `api/index.js` switches from the mock to an HTTP client — no page changes.
 
-## The two databases (D-134)
+## Where it runs (D-135: cloud)
 
-| | Centre PC (PostgreSQL) | Supabase (online) |
+| | Vercel | Supabase |
 |---|---|---|
-| Role | **Main.** Every save happens here. | **Online copy**, kept in step from the centre PC. |
-| Works without internet | Yes — collection, billing, printing on the centre Wi-Fi | — |
-| Used for | Operators, owner at the centre, owner remotely through the Cloudflare Tunnel | Off-site backup; read-only pages when the centre PC is off (website, farmer's own page) |
-| Writes | Yes | No (only the sync from the centre PC) |
+| Role | The app (PWA) and the API (Python serverless functions), scheduled jobs (Vercel Cron: messages, daily backup) | **Main database** (PostgreSQL, Mumbai), all saves |
+| Plan | Pro (Hobby is non-commercial only) | Paid (free projects pause after a week of no use); Row Level Security on every table |
 
-Why one main database: two databases that both take saves would need conflict handling (two people changing the same bill). With one main and one copy, nothing can disagree.
+The centre needs internet; a milk entry made while it is down waits on the phone and is sent later (retry queue, client UUID). The PC database stays for development and tests.
 
 ## Steps
 
@@ -32,18 +30,18 @@ Each step: backend endpoints + backend tests (the same cases as the frontend tes
 6. **Bills and money** — generate / finalize (locks the period), bill PDF, payments by hand, UPI payouts (still simulated, D-107), the double-payment guard (D-125).
 7. **Dairy dispatch, milk buyers, dashboard** — dispatch, buyers' daily sheet and month account, walk-in sales, dashboard figures and net profit.
 8. **Messages and the rest** — outbox worker (WhatsApp / SMS, daily SMS cap), notices, schemes, doctors, help tickets, website content, audit log, backup.
-9. **Supabase copy** — connected and filled once on 16/11/2026 (RLS on for every table). Still to build: the sync job from the centre PC (every few minutes and after each save batch; queued while offline).
-10. **Switch over** — move the test data or start clean (owner's choice), point `api/index.js` at the backend, run the Windows service, the Cloudflare Tunnel on the centre's domain, daily backup + off-site copy, and a tested restore.
+9. **Cloud set-up** — Supabase connected and filled on 16/11/2026 (RLS on for every table). Still to build: the API as Vercel functions, Vercel Cron for the outbox and backups, the SMS route from the cloud. (Was: sync from the centre PC (every few minutes and after each save batch; queued while offline).
+10. **Switch over** — move the test data or start clean (owner's choice), point `api/index.js` at the API on Vercel, the centre's domain on Vercel, daily backup + off-site copy, and a tested restore.
 
 ## Decisions needed from the owner
 
-1. Supabase as the **online copy** (recommended above) — or should it take saves too?
+1. ~~Supabase role~~ — decided: Supabase is the main database, app on Vercel (D-135).
 2. **Start clean** on go-live day, or carry over the test data?
 3. **Off-site backup folder** (`BACKUP_DESTINATION` in `.env`) — e.g. a Google Drive for desktop folder. Not set yet.
-4. **Domain** for the Cloudflare Tunnel (e.g. `<name>.in`).
+4. **Domain** for the live site on Vercel (e.g. `<name>.in`), and the Vercel Pro / Supabase paid plans on the client's accounts.
 5. **Font** — Mukta stays unless another is chosen in the website's font tester (D-133).
 
 ## What the owner fills in `.env` (never shared in chat)
 
 - `SUPABASE_DATABASE_URL` — Supabase → Project → Connect → Session pooler URI (format in `.env.example`).
-- `BACKUP_DESTINATION`, `CLOUDFLARE_TUNNEL_HOSTNAME`, and the WhatsApp keys when messages go live.
+- `BACKUP_DESTINATION` and the WhatsApp keys when messages go live. On Vercel the same values go into the project's Environment Variables, never into the code.

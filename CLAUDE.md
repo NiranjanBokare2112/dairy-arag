@@ -13,13 +13,16 @@ Client project of **Bokare Technologies**. This file is the standing brief: read
 - Payment to farmers: **UPI and cash**.
 - Farmers mostly have WhatsApp; a few do not.
 
-## 2. Deployment model (decided)
+## 2. Deployment model (decided — changed to cloud on 16/11/2026, D-135)
 
-- **Self-hosted on the center's own old Windows desktop**, which has 24×7 power backup. No monthly cloud hosting.
-- **Works offline**: operator phones/tablets connect to the desktop over the center's Wi-Fi (LAN). If the internet drops, collection, billing and printing keep working.
-- **Online when internet is available**: the owner dashboard is reachable from anywhere through a **Cloudflare Tunnel** on the center's own domain (e.g. `<name>.in`). Must be behind login.
-- Outgoing messages (WhatsApp/SMS) go into an **outbox queue** and are sent when the network allows; nothing is lost while offline.
-- **Backups**: local daily backup on the desktop + one off-site copy (cloud storage, free tier). Restore must be documented and tested.
+- **Cloud: Vercel + Supabase.** The app (PWA) and the API are hosted on **Vercel**; **Supabase** (PostgreSQL, Mumbai region) is the main database. No server at the centre. (Replaces the earlier self-hosted desktop + Cloudflare Tunnel plan.)
+- **Needs internet at the centre.** If it drops, a milk entry waits on the phone (client UUID, retry queue) and is sent when the connection is back; bills, dashboard and printing need the connection. A mobile hotspot is the backup link.
+- Everything behind login; the public website and the farmer's own page (by code) are the only open pages.
+- Outgoing messages (WhatsApp/SMS) go into an **outbox queue** in the database and are sent by a scheduled job (Vercel Cron); nothing is lost while a provider is down.
+- **SMS**: the centre's SIM in an Android SMS-gateway app must be reachable from the cloud (the app's cloud mode), or a DLT SMS provider is used.
+- **Backups**: Supabase's own backups (paid plan) + our daily dump to an off-site folder. Restore must be documented and tested.
+- **Cost** (client's accounts): Vercel **Pro** (the free Hobby plan is non-commercial only) and a paid Supabase plan (free projects pause after a week of no use).
+- **Demo link (now)**: the same app on Vercel in test mode — each browser starts from the published demo data (`frontend/public/demo/demo-data.json`, fictional) and keeps its own changes; nothing is shared or saved centrally.
 
 ## 3. Messaging (decided)
 

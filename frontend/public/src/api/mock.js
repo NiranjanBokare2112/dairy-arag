@@ -2083,7 +2083,7 @@ const api = {
     return clone(rows.slice(-limit).reverse());
   },
   async resetDemo() {
-    db = migrate(buildSeed()); firstRun = true; await bootstrapDemo(); save();
+    db = migrate(buildSeed()); firstRun = true; await loadDemoSnapshot(); await bootstrapDemo(); save(); // D-135: the published demo data on a web host
   },
   async exportBackup() { requireRole('owner'); return JSON.stringify(db, null, 1); },
 };
@@ -2209,6 +2209,21 @@ async function startShared() {
     if (j.db) { db = migrate(j.db); sharedVersion = j.version; firstRun = false; try { localStorage.setItem(DB_KEY, JSON.stringify(db)); } catch { /* ignore */ } }
     else { await bootstrapDemo(); await pushShared(); } // first device: its data becomes the shared copy
   } catch { /* no dev server: stay local */ }
+}
+
+/**
+ * D-135: on a plain web host (Vercel demo link) there is no dev server. A browser opening the app for the first time then
+ * starts from the published demo data (demo/demo-data.json: fictional, same for every visitor) instead of building a small
+ * sample; after that it keeps its own changes in this browser only. No file → the small sample as before.
+ */
+async function loadDemoSnapshot() {
+  if (!inBrowser || sharedOn || !firstRun) return;
+  try {
+    const r = await fetch('./demo/demo-data.json', { cache: 'no-cache', signal: AbortSignal.timeout(15000) });
+    if (!r.ok) return;
+    const snap = await r.json(); if (!snap?.farmers || !snap?.center) return;
+    db = migrate(snap); firstRun = false; save();
+  } catch { /* no snapshot: the small sample is built instead */ }
 }
 
 let queue = Promise.resolve();
@@ -2349,6 +2364,7 @@ async function catchUpDemo() {
 }
 
 await startShared();
+await loadDemoSnapshot();
 await bootstrapDemo();
 if (!db.msgHistory) { backfillMessages(); save(); } // older saved data: add the message history once
 await catchUpDemo().catch((e) => console.warn('demo catch-up skipped:', e?.code || e)); // D-79
