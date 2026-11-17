@@ -1515,4 +1515,12 @@ export default {
   'rep.expenses': 'Expenses ({n})',
   'rep.print': 'Print',
   'dash.printReport': 'Print report',
+  'rep.profitPending': 'Shows once the dairy dispatch is entered',
+  'rep.profitPartial': 'Profit (on milk sent)',
+  'rep.lossPartial': 'Loss (on milk sent)',
+  'rep.profitEst': 'Estimated profit',
+  'rep.lossEst': 'Estimated loss',
+  'rep.estNote': 'Dairy dispatch not entered — estimated from the dairy chart / last rate',
+  'rep.toDairyEst': 'To the dairy — {s}{m} (estimate)',
+  'rep.missingEst': 'Dairy dispatch not entered yet: {x}. The profit is an estimate — exact once the dispatch is entered.',
 };

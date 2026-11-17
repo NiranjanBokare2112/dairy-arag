@@ -29,7 +29,20 @@ export default {
     const [center, farmers, collections, dispatches, bdM, bdE, counter] = await Promise.all([api.center(), api.farmers({ includeInactive: true }),
       api.collections({ date }), api.dispatches({ from: date, to: date }), api.buyerDay({ date, shift: 'morning' }), api.buyerDay({ date, shift: 'evening' }), api.counterSales({ date })]);
     const buyerSales = [...bdM.rows, ...bdE.rows].map((r) => r.sale).filter(Boolean);
-    const data = { date, collections, dispatches, buyerSales, counterSales: counter.rows };
+    // D-141: a shift + milk type not yet entered as dispatched gets an estimated dairy rate — the dairy chart for that
+    // milk's average Fat/SNF, else the last rate the dairy paid for that milk (as the dispatch form does, D-139)
+    const estimateRates = {};
+    const past = await api.dispatches({ to: date });
+    for (const k of new Set(collections.map((c) => `${c.shift}|${c.milkType}`))) {
+      const [s, m] = k.split('|'); if (dispatches.some((d) => d.shift === s && d.milkType === m)) continue;
+      const xs = collections.filter((c) => c.shift === s && c.milkType === m); const l = xs.reduce((a, c) => a + c.litresX100, 0);
+      const avg = (f) => Math.round(xs.reduce((a, c) => a + c[f] * c.litresX100, 0) / l);
+      const q = await api.quote({ milkType: m, date, litresX100: l, fatX10: avg('fatX10'), snfX10: avg('snfX10'), side: 'dairy' }).catch(() => null);
+      const last = past.filter((d) => d.milkType === m && d.ratePaise && (d.date < date || (d.date === date && d.shift !== s))).sort((a, b) => (a.date + a.shift < b.date + b.shift ? 1 : -1))[0];
+      const rate = q?.ok ? q.ratePaise : last?.ratePaise;
+      if (rate) estimateRates[k] = rate;
+    }
+    const data = { date, collections, dispatches, buyerSales, counterSales: counter.rows, estimateRates };
     const fById = new Map(farmers.map((f) => [f.id, f]));
     const printedAt = fmt.dateTime(new Date().toISOString());
 
@@ -53,7 +66,9 @@ export default {
         <div class="bill-box"><h4>${t('rep.milkIn')}</h4><b class="rep-big">${L(r.in.total.litresX100)} ${t('unit.l')}</b><span>${t('rep.farmersN', { n: r.in.total.farmers })}</span></div>
         <div class="bill-box"><h4>${t('rep.toFarmers')}</h4><b class="rep-big">₹ ${R(r.purchasePaise)}</b><span>${t('rep.avgRate', { r: R(r.in.total.ratePaise) })}</span></div>
         <div class="bill-box"><h4>${t('rep.milkOut')}</h4><b class="rep-big">${L(r.out.totalX100)} ${t('unit.l')}</b><span>₹ ${R(r.salePaise)}</span></div>
-        <div class="bill-box main"><h4>${r.profitPaise >= 0 ? t('dash.p.profit') : t('dash.p.lossMoney')}</h4><b class="rep-big ${r.profitPaise < 0 ? 'neg' : ''}">₹ ${R(r.profitPaise)}</b><span>${t('dash.p.perL', { v: fmt.rs(r.perLitrePaise) })}</span></div>
+        ${r.profitPaise == null ? html`<div class="bill-box main"><h4>${t('dash.p.profit')}</h4><b class="rep-big">—</b><span>${r.in.total.entries ? t('rep.profitPending') : ''}</span></div>`
+          : html`<div class="bill-box main"><h4>${r.profitEstimated ? (r.profitPaise >= 0 ? t('rep.profitEst') : t('rep.lossEst')) : r.profitPaise >= 0 ? (r.profitPartial ? t('rep.profitPartial') : t('dash.p.profit')) : (r.profitPartial ? t('rep.lossPartial') : t('dash.p.lossMoney'))}</h4>
+            <b class="rep-big ${r.profitPaise < 0 ? 'neg' : ''}">₹ ${R(r.profitPaise)}</b><span>${t('dash.p.perL', { v: fmt.rs(r.perLitrePaise) })}${r.profitEstimated ? html`<br><small>${t('rep.estNote')}</small>` : ''}</span></div>`}
       </div>`;
     const inTable = (r) => html`<h3 class="rep-h">${t('rep.inTitle')}</h3>
       <table class="bill-table"><thead><tr><th>${t('common.milk')}</th><th class="r">${t('rep.farmers')}</th><th class="r">${t('collection.litres')}</th><th class="r">${t('common.fat')}</th><th class="r">${t('common.snf')}</th><th class="r">${t('rep.avgRateCol')}</th><th class="r">${t('common.amount')} ₹</th></tr></thead>
@@ -61,12 +76,13 @@ export default {
         <tfoot><tr><td>${t('common.total')}</td><td class="r">${r.in.total.farmers}</td><td class="r">${L(r.in.total.litresX100)}</td><td class="r">${T(r.in.total.fatX10)}</td><td class="r">${T(r.in.total.snfX10)}</td><td class="r">${R(r.in.total.ratePaise)}</td><td class="r">${R(r.in.total.amountPaise)}</td></tr></tfoot></table>`;
     const outTable = (r) => html`<h3 class="rep-h">${t('rep.outTitle')}</h3>
       <table class="bill-table"><thead><tr><th>${t('rep.where')}</th><th class="r">${t('collection.litres')}</th><th class="r">${t('common.fat')}</th><th class="r">${t('common.snf')}</th><th class="r">${t('rep.rateCol')}</th><th class="r">${t('common.amount')} ₹</th></tr></thead>
-        <tbody>${['cow', 'buffalo'].filter((m) => r.out.dairy[m].count).map((m) => html`<tr><td>${t('rep.toDairy', { m: fmt.milk(m) })}</td><td class="r">${L(r.out.dairy[m].litresX100)}</td><td class="r">${T(r.out.dairy[m].fatX10)}</td><td class="r">${T(r.out.dairy[m].snfX10)}</td><td class="r">${R(r.out.dairy[m].ratePaise)}</td><td class="r">${R(r.out.dairy[m].amountPaise)}</td></tr>`)}
+        <tbody>${r.estimatedDairy.map((e) => html`<tr class="rep-est"><td>${t('rep.toDairyEst', { m: fmt.milk(e.milkType), s: shift === 'all' ? fmt.shift(e.shift) + ' ' : '' })}</td><td class="r">${L(e.litresX100)}</td><td class="r">—</td><td class="r">—</td><td class="r">${R(e.ratePaise)}</td><td class="r">${R(e.amountPaise)}</td></tr>`)}
+          ${['cow', 'buffalo'].filter((m) => r.out.dairy[m].count).map((m) => html`<tr><td>${t('rep.toDairy', { m: fmt.milk(m) })}</td><td class="r">${L(r.out.dairy[m].litresX100)}</td><td class="r">${T(r.out.dairy[m].fatX10)}</td><td class="r">${T(r.out.dairy[m].snfX10)}</td><td class="r">${R(r.out.dairy[m].ratePaise)}</td><td class="r">${R(r.out.dairy[m].amountPaise)}</td></tr>`)}
           ${r.out.buyers.count ? html`<tr class="alt"><td>${t('rep.toBuyers', { n: r.out.buyers.count })}</td><td class="r">${L(r.out.buyers.litresX100)}</td><td class="r">—</td><td class="r">—</td><td class="r">—</td><td class="r">${R(r.out.buyers.amountPaise)}</td></tr>` : ''}
           ${r.out.counter.count ? html`<tr><td>${t('rep.walkIn', { n: r.out.counter.count, c: R(r.out.counter.cashPaise), u: R(r.out.counter.upiPaise) })}</td><td class="r">${L(r.out.counter.litresX100)}</td><td class="r">—</td><td class="r">—</td><td class="r">—</td><td class="r">${R(r.out.counter.amountPaise)}</td></tr>` : ''}
           <tr class="alt"><td>${t('rep.balance')}</td><td class="r ${Math.abs(r.out.balancePct) > 1 ? 'neg' : ''}">${L(r.out.balanceX100)}</td><td colspan="3" class="r small">${r.in.total.litresX100 ? t('rep.balancePct', { p: r.out.balancePct.toFixed(1) }) : ''}</td><td></td></tr></tbody>
         <tfoot><tr><td>${t('rep.totalOut')}</td><td class="r">${L(r.out.totalX100)}</td><td colspan="3"></td><td class="r">${R(r.salePaise)}</td></tr></tfoot></table>
-      ${r.missingDispatch.length ? html`<p class="rep-note">${t('rep.missing', { x: r.missingDispatch.map((x) => `${fmt.shift(x.shift)} ${fmt.milk(x.milkType)}`).join(', ') })}</p>` : ''}`;
+      ${r.missingDispatch.length ? html`<p class="rep-note">${t(r.profitEstimated ? 'rep.missingEst' : 'rep.missing', { x: r.missingDispatch.map((x) => `${fmt.shift(x.shift)} ${fmt.milk(x.milkType)}`).join(', ') })}</p>` : ''}`;
     const entriesTable = (r) => { const rows = [...r.entries].sort((a, b) => (fById.get(a.farmerId)?.code || 0) - (fById.get(b.farmerId)?.code || 0) || (a.shift < b.shift ? -1 : 1));
       return html`<h3 class="rep-h">${t('rep.entries', { n: rows.length })}</h3>
       ${rows.length ? html`<table class="bill-table rep-entries"><thead><tr><th>${t('common.code')}</th><th>${t('common.name')}</th><th>${t('common.milk')}</th><th class="r">${t('collection.litres')}</th><th class="r">${t('common.fat')}</th><th class="r">${t('common.snf')}</th><th class="r">${t('common.rate')}</th><th class="r">${t('common.amount')} ₹</th></tr></thead>

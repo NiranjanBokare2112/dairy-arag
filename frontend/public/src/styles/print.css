@@ -72,6 +72,17 @@
 .rep-note { margin: 6px 0 0; font-size: 13px; color: #8A5A00; background: #FFF8E1; border-radius: 6px; padding: 4px 10px; }
 .rep-printed { margin: 6px 0 0; font-size: 11px; color: #777; text-align: right; }
 .bill.report .bill-box .l.small { font-size: 12px; color: #555; }
+/* a full shift (header, 4 boxes, 2 tables, 13+ farmer rows, note, signatures) fits one A4 page */
+.bill.report { padding: 24px 36px 20px; }
+.bill.report .rep-boxes { margin-top: 10px; }
+.bill.report .rep-h { margin-top: 11px; }
+.bill.report .bill-table td { height: 19px; }
+.bill.report .bill-table th { height: 25px; }
+.bill.report .rep-note { margin-top: 5px; padding: 3px 10px; }
+.bill.report .bill-sign { padding-top: 18px; }
+.bill.report .bill-bottom { margin: 10px -36px -20px; }
+.bill-table tr.rep-est td { font-style: italic; color: #7A5A00; }
+.bill.report .bill-box small { font-size: 11px; color: #7A5A00; }
 
 @media print {
   @page { size: A4; margin: 0; }
@@ -82,6 +93,6 @@
   .bill { box-shadow: none; zoom: 1 !important; min-height: 297mm; width: 210mm; }
   .receipt { box-shadow: none; page: receipt; }
   .rep-pages { display: block; }
-  .rep-pages .bill { break-after: page; } .rep-pages .bill:last-child { break-after: auto; }
+  .rep-pages .bill { break-after: page; min-height: 0 !important; } .rep-pages .bill-table tr { break-inside: avoid; } .rep-pages .bill:last-child { break-after: auto; }
 }
 @page receipt { size: 58mm auto; margin: 0; }

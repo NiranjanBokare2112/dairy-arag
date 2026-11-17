@@ -250,3 +250,9 @@ These were chosen while building the frontend. None adds a dependency. Rules mar
 - One page per shift: four boxes (milk in, payable to farmers, milk out, profit + per litre); milk from farmers by cow / buffalo / total (farmers, litres, litre-weighted Fat/SNF, average rate, amount); where the milk went (dairy per milk type with Fat/SNF/rate/amount, milk buyers, walk-in sales with cash/UPI, left / shrinkage with %); every farmer's entry sorted by code with totals; operator and owner signature lines; printed time. A shift whose milk is not yet dispatched is named, since its profit is then incomplete.
 - दिवसभर prints the morning page, the evening page and a whole-day page that adds the day's feed sales (on credit), walk-in cash/UPI, payments to farmers (cash/UPI), advances given and expenses.
 - Calculations in `lib/dayreport.js` (tested).
+
+## D-141 — Daily report: profit for every shift, estimated until the dispatch is entered (2026-11-17)
+- Milk goes to the dairy after every shift, so the report always shows a profit. Before the dispatch is entered, a shift showed a false "तोटा" (all of the farmers' amount, no dairy sale).
+- Now, for a shift + milk type without a dispatch entry, the dairy amount is **estimated**: litres = collected − sold here, × the dairy rate chart rate for that milk's average Fat/SNF, else the last rate the dairy paid for that milk (same as the dispatch form, D-139). The box reads **अंदाजे नफा**, the dairy rows are marked "(अंदाजे)" in italics, they count in "दूध गेले" and the balance, and a note asks to enter the dispatch — once entered, the exact figures replace the estimate.
+- With no rate at all, that milk is left out of the profit ("नफा (पाठवलेल्या दुधावर)"), or the box shows "—" — never a false loss. "तोटा" appears only for a real loss.
+- Print: report spacing tightened so a full shift fits one A4 page; long farmer lists flow onto the next page instead of being cut.

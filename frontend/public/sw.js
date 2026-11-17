@@ -1,6 +1,6 @@
 // Service worker: cache the app shell so the PWA opens even if the desktop server restarts
 // or the phone briefly loses Wi-Fi. API calls (/api/*) are never cached.
-const VERSION = 'arag-v145';
+const VERSION = 'arag-v149';
 const SHELL = [
   './', './index.html', './manifest.webmanifest', './favicon.png',
   './assets/fonts/mukta.css', './assets/img/cow-calf.png', './assets/img/icon-192.png',
