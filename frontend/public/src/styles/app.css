@@ -1406,3 +1406,6 @@ label.field > .hint :is(a, button), label.field > .name-choices button { pointer
 .tk-pic { padding: 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: #fff; cursor: zoom-in; }
 .tk-pic img { display: block; width: 120px; height: 90px; object-fit: cover; }
 .tk-pic-big img { display: block; max-width: 100%; max-height: 75vh; margin: 0 auto; border-radius: 10px; }
+/* D-139: dispatch form fills itself */
+.disp-fill { margin: -4px 0 0; color: #7A5A00; background: #FFF8E1; border: 1px solid #F3DFA2; border-radius: 10px; padding: 8px 12px; }
+.disp-fill.saved { color: var(--green, #2E7D32); background: #E8F5E9; border-color: #B9DFC0; }

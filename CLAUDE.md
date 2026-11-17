@@ -88,3 +88,10 @@ arag-dudh-sankalan/
   scripts/               install/run as Windows service, backup, restore, seed data
   .env.example
 ```
+
+## 9. Working guides and shortcuts
+
+- Folder rules, read automatically when working there: `frontend/CLAUDE.md` (test mode, texts, app version bump, browser checks) and `backend/CLAUDE.md` (three databases, safety rules, migrations, RLS on Supabase).
+- Slash commands (`.claude/commands/`): `/test` (all tests), `/demo-data <date>` (demo data + laptop package), `/push` (secret check → commit → push), `/db-check` (PC vs Supabase, read-only).
+- Subagents (`.claude/agents/`): `code-reviewer` (review changes for bugs, security and this project's rules — report only) and `ui-designer` (screens and visual design within the brand). Ask for them by name, e.g. "use the code-reviewer on today's changes".
+- VS Code: Terminal → Run Task — dev server, frontend / backend / all tests, DB checks, PC backup, demo data (`.vscode/tasks.json`, local only).

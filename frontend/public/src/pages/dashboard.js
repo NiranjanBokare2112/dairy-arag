@@ -180,7 +180,8 @@ export default {
     };
 
     mount(el, html`
-      <div class="page-head"><h1>${t('nav.dashboard')}</h1><span class="muted">${t('dash.cycle', { a: fmt.date(d.cycle.start), b: fmt.date(d.cycle.end) })}</span></div>
+      <div class="page-head"><h1>${t('nav.dashboard')}</h1><span class="muted">${t('dash.cycle', { a: fmt.date(d.cycle.start), b: fmt.date(d.cycle.end) })}</span>
+        <a class="btn btn-ghost dash-print" href="#/report?date=${range.to}&shift=all">${icon('print', 18)} ${t('dash.printReport')}</a></div>
 
       <section class="card dash-filter" aria-label="${t('dash.filter')}">
         <div class="chips" role="group" aria-label="${t('dash.filter')}">

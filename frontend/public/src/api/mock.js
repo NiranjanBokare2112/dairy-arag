@@ -1714,8 +1714,15 @@ const api = {
   async addDispatch(input) {
     const u = requirePage(requireRole('owner', 'operator'), '/dispatch');
     if (!(input.litresX100 > 0) || !(input.ratePaise > 0)) throw new ApiError('invalid');
-    if (db.dispatches.some((d) => d.date === input.date && d.shift === input.shift && d.milkType === input.milkType)) throw new ApiError('duplicate');
-    const rec = { id: uuid(), centerId: CENTER_ID, ...input, createdAt: nowIso(), createdBy: u.id };
+    const old = db.dispatches.find((d) => d.date === input.date && d.shift === input.shift && d.milkType === input.milkType);
+    if (old && !input.replace) throw new ApiError('duplicate');
+    const { replace, ...data } = input;
+    if (old) { // D-139: correcting a saved dispatch (same date, shift, milk) — audit-logged
+      const before = clone(old); Object.assign(old, data, { updatedAt: nowIso(), updatedBy: u.id });
+      audit('update', 'dispatch', old.id, before, clone(old), u.id); save();
+      return clone(old);
+    }
+    const rec = { id: uuid(), centerId: CENTER_ID, ...data, createdAt: nowIso(), createdBy: u.id };
     db.dispatches.push(rec); audit('create', 'dispatch', rec.id, null, rec); save();
     return clone(rec);
   },

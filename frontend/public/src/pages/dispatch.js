@@ -35,13 +35,14 @@ export default {
             <label class="field"><span>${t('dispatch.dairy')}</span><input type="text" name="dairyName" value="${center.dairyName || ''}"></label></div>
           <div class="row">${seg('shift', [['morning', t('shift.morning')], ['evening', t('shift.evening')]], currentShift())}${seg('milk', [['cow', t('milk.cow')], ['buffalo', t('milk.buffalo')]], 'cow')}</div>
           <div class="note" data-coll></div>
+          <p class="small disp-fill" data-fill-note hidden></p>
           <div class="entry-row">
             <label class="field"><span>${t('collection.litres')} *</span><input name="litres" inputmode="decimal"></label>
             <label class="field"><span>${t('common.fat')}</span><input name="fat" inputmode="decimal"></label>
             <label class="field"><span>${t('common.snf')}</span><input name="snf" inputmode="decimal"></label></div>
           <div class="form-grid"><label class="field"><span>${t('dispatch.rate')} *</span><input name="rate" inputmode="decimal"><span class="hint" data-rate-hint></span></label>
             <label class="field"><span>${t('dispatch.received')}</span><input name="amount" inputmode="decimal"><span class="hint">${t('dispatch.receivedHint')}</span></label></div>
-          <span class="err" role="alert"></span><button class="btn btn-primary btn-xl btn-block">${t('common.save')}</button></form>
+          <span class="err" role="alert"></span><button class="btn btn-primary btn-xl btn-block" data-save>${t('common.save')}</button></form>
         <section class="card"><h2>${t('dispatch.list')}</h2>
           ${rows.length ? html`<div class="table-wrap" data-pg-list="dispatch"><table class="tbl"><thead><tr><th>${t('common.date')}</th><th>${t('bill.shift')}</th><th class="num">${t('dispatch.collected')}</th><th class="num">${t('dispatch.soldHere')}</th><th class="num">${t('dispatch.sent')}</th><th class="num">${t('dispatch.shrink')}</th><th class="num">${t('common.amount')}</th></tr></thead>
           <tbody>${rows.map((d, i) => { const c = collected(d.date, d.shift, d.milkType); const sl = soldAt(d.date, d.shift, d.milkType); const diff = c - sl - d.litresX100; return html`<tr ${pgAttrs(i, PER_PAGE)}>
@@ -69,14 +70,45 @@ export default {
       hint.textContent = t('dispatch.chartRate', { r: fmt.rs(q.ratePaise) });
     };
     form.addEventListener('input', (e) => { if (['fat', 'snf', 'litres'].includes(e.target.name)) fillRate(); });
-    form.addEventListener('change', (e) => { if (['milk', 'date'].includes(e.target.name)) fillRate(); });
+
+    // D-139: the form fills itself for the chosen date + shift + milk — a saved dispatch is shown for correction;
+    // otherwise litres = collected − sold here, Fat/SNF = the litre-weighted average of what farmers poured in that
+    // shift, rate = the dairy chart (else the last rate the dairy paid for that milk). Always to be checked against the slip.
+    let existing = null;
+    const fillForm = async () => {
+      const d = form.date.value; const s = form.shift.value; const m = form.milk.value;
+      const [disp, cl, sd, recent] = await Promise.all([api.dispatches({ from: d, to: d }), api.collections({ from: d, to: d }), api.soldByShift({ from: d, to: d }), api.dispatches({ to: d })]);
+      existing = disp.find((x) => x.shift === s && x.milkType === m) || null;
+      const note = $('[data-fill-note]', el); const btn = $('[data-save]', el);
+      const tenth = (x) => (x == null ? '' : (x / 10).toFixed(1)); const rs = (p) => (p ? (p / 100).toFixed(2) : '');
+      autoRate = '';
+      if (existing) {
+        form.litres.value = fmt.litres(existing.litresX100); form.fat.value = tenth(existing.fatX10); form.snf.value = tenth(existing.snfX10);
+        form.rate.value = rs(existing.ratePaise); form.amount.value = rs(existing.amountPaise); if (existing.dairyName) form.dairyName.value = existing.dairyName;
+        note.textContent = t('dispatch.alreadySaved'); note.className = 'small disp-fill saved'; note.hidden = false; btn.textContent = t('dispatch.saveChanges');
+        $('[data-rate-hint]', el).textContent = '';
+        return;
+      }
+      btn.textContent = t('common.save');
+      const mine = cl.filter((c) => c.shift === s && c.milkType === m && !c.void);
+      const litres = mine.reduce((a, c) => a + c.litresX100, 0); const sold = sd[`${d}|${s}|${m}`] || 0;
+      const avg = (k) => (litres ? Math.round(mine.reduce((a, c) => a + c[k] * c.litresX100, 0) / litres) : null);
+      form.litres.value = litres - sold > 0 ? fmt.litres(litres - sold) : '';
+      form.fat.value = tenth(avg('fatX10')); form.snf.value = tenth(avg('snfX10')); form.amount.value = '';
+      const last = recent.filter((x) => x.milkType === m && x.ratePaise).sort((a, b) => (a.date + a.shift < b.date + b.shift ? 1 : -1))[0];
+      form.rate.value = last ? rs(last.ratePaise) : ''; autoRate = form.rate.value;
+      await fillRate(); // the dairy chart's rate wins when there is one
+      note.textContent = litres ? t('dispatch.autoFilled') : t('dispatch.noMilk'); note.className = 'small disp-fill'; note.hidden = false;
+    };
+    form.addEventListener('change', (e) => { if (['milk', 'date', 'shift'].includes(e.target.name)) fillForm(); });
+    fillForm();
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const litresX100 = parseLitres(form.litres.value); const ratePaise = toPaise(form.rate.value);
       try {
         if (litresX100 == null || ratePaise == null) throw { code: 'invalid' };
         await api.addDispatch({ date: form.date.value, shift: form.shift.value, milkType: form.milk.value, litresX100, fatX10: parseTenths(form.fat.value), snfX10: parseTenths(form.snf.value),
-          ratePaise, amountPaise: form.amount.value ? toPaise(form.amount.value) : amountFor(litresX100, ratePaise), dairyName: form.dairyName.value });
+          ratePaise, amountPaise: form.amount.value ? toPaise(form.amount.value) : amountFor(litresX100, ratePaise), dairyName: form.dairyName.value, replace: !!existing });
         toast(t('common.saved')); navigate('/dispatch');
       } catch (err) { $('.err', form).textContent = errorText(err); }
     });

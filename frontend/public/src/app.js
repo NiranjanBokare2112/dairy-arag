@@ -25,6 +25,7 @@ import rates from './pages/rates.js';
 import rateEdit from './pages/rate-edit.js';
 import ledger from './pages/ledger.js';
 import expenses from './pages/expenses.js';
+import report from './pages/report.js';
 import billing from './pages/billing.js';
 import bill from './pages/bill.js';
 import payments from './pages/payments.js';
@@ -58,6 +59,7 @@ route('/rates/new', rateEdit);
 route('/rates/:id', rateEdit);
 route('/ledger', ledger);
 route('/expenses', expenses);
+route('/report', report); // दैनिक अहवाल (D-140)
 route('/billing', billing);
 route('/bill/:id', bill);
 route('/b/:token', { ...bill, public: true });
