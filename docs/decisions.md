@@ -284,3 +284,11 @@ Functional changes are made in Arag first; Mallewadi takes them with `/sync-from
   - `navGroups()` in `core/nav.js`;
   - `countUp` in `core/motion.js`;
   - the D-144 block in `app.css`.
+
+## D-145 — A browser never shows the other client's data (2026-11-19)
+In test/demo mode each browser keeps its own copy of the data and only loaded the demo data on its first visit. The Mallewadi link (`dairy-sd-sample`) served Arag's app and data until 19/11/2026, so phones that had opened it kept Arag's data under the new Mallewadi screens ("both projects look merged").
+**Fix:**
+- Saved data now carries its client (`client: 'arag'` / `'mallewadi'`, from `seed.js` → `DATA_CLIENT`).
+- On start, data of another client is discarded, the phone is logged out, and it loads this client's demo data. This also applies to the dev server's shared copy and the demo file.
+- Unlabelled old data counts as Arag's in Arag, and as Mallewadi's in Mallewadi only if it already carries Mallewadi's name.
+- No manual clearing is needed on phones.

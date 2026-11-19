@@ -2,7 +2,7 @@
 // will expose (see docs/api-contract.md). Lets the UI be built, demoed and tested offline now.
 // NOTE: PINs are plain text here for the demo only — the real backend hashes them.
 import { govtSchemes, SCHEME_SET } from './schemes-data.js';
-import { buildSeed, CENTER_ID, CENTER_DEFAULTS, demoAadhaarLast4, sampleSchemes, demoFill, topUpDemo, sampleDairyCharts, sampleDoctors, demoExpenses, isDemoData, topUpExpenses } from './seed.js';
+import { buildSeed, CENTER_ID, DATA_CLIENT, isOwnData, CENTER_DEFAULTS, demoAadhaarLast4, sampleSchemes, demoFill, topUpDemo, sampleDairyCharts, sampleDoctors, demoExpenses, isDemoData, topUpExpenses } from './seed.js';
 import { DEFAULT_EXPENSE_CATEGORIES, DEFAULT_MSG_COST_PAISE, expenseShare, expenseTotals, autoCosts, monthlyDue, expenseError } from '../lib/expenses.js';
 import { findDuplicate, priceEntry } from '../lib/collection.js';
 import { chartFor, lookupRate, adjustChart } from '../lib/rates.js';
@@ -37,13 +37,19 @@ let db = load();
 function load() {
   try {
     const s = localStorage.getItem(DB_KEY);
-    if (s) return migrate(JSON.parse(s));
+    if (s) {
+      const d = JSON.parse(s);
+      if (isOwnData(d)) return migrate(d);
+      // D-145: another client's data (e.g. saved when this link still served the other app): start fresh, log out
+      localStorage.removeItem(DB_KEY); localStorage.removeItem(SESSION_KEY); localStorage.removeItem(SESSION_ID_KEY);
+    }
   } catch { /* corrupt or blocked */ }
   firstRun = true;
   return migrate(buildSeed());
 }
 /** Bring data saved by an older version up to date. */
 function migrate(d) {
+  d.client = DATA_CLIENT; // D-145: label the data with its client
   for (const [k, v] of Object.entries(CENTER_DEFAULTS)) if (d.center[k] === undefined) d.center[k] = v;
   delete d.center.collectionTimes;
   d.sessions ||= [];
@@ -2265,7 +2271,7 @@ async function pullShared() {
   if (r.status === 204) return;
   if (!r.ok) throw new Error('shared ' + r.status);
   const j = await r.json();
-  if (j.db) { db = migrate(j.db); sharedVersion = j.version; try { localStorage.setItem(DB_KEY, JSON.stringify(db)); } catch { /* ignore */ } }
+  if (j.db && isOwnData(j.db)) { db = migrate(j.db); sharedVersion = j.version; try { localStorage.setItem(DB_KEY, JSON.stringify(db)); } catch { /* ignore */ } }
 }
 /** true = saved; false = someone else saved first (newer copy now loaded). Network errors throw. */
 async function pushShared() {
@@ -2281,8 +2287,8 @@ async function startShared() {
     if (!r.ok) return; // not the dev server
     const j = await r.json();
     sharedOn = true;
-    if (j.db) { db = migrate(j.db); sharedVersion = j.version; firstRun = false; try { localStorage.setItem(DB_KEY, JSON.stringify(db)); } catch { /* ignore */ } }
-    else { await bootstrapDemo(); await pushShared(); } // first device: its data becomes the shared copy
+    if (j.db && isOwnData(j.db)) { db = migrate(j.db); sharedVersion = j.version; firstRun = false; try { localStorage.setItem(DB_KEY, JSON.stringify(db)); } catch { /* ignore */ } }
+    else { sharedVersion = j.version || 0; await bootstrapDemo(); await pushShared(); } // empty, or another client's copy (D-145) // first device: its data becomes the shared copy
   } catch { /* no dev server: stay local */ }
 }
 
@@ -2296,7 +2302,7 @@ async function loadDemoSnapshot() {
   try {
     const r = await fetch('./demo/demo-data.json', { cache: 'no-cache', signal: AbortSignal.timeout(15000) });
     if (!r.ok) return;
-    const snap = await r.json(); if (!snap?.farmers || !snap?.center) return;
+    const snap = await r.json(); if (!snap?.farmers || !snap?.center || !isOwnData(snap)) return;
     db = migrate(snap); firstRun = false; save();
   } catch { /* no snapshot: the small sample is built instead */ }
 }

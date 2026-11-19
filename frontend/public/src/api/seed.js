@@ -14,6 +14,10 @@ export const demoAadhaarLast4 = (code) => String((code * 7919 + 2468) % 10000).p
 export function sampleSchemes() { return govtSchemes(CENTER_ID); } // D-92: real Maharashtra schemes (schemes-data.js)
 
 export const CENTER_ID = 'arag';
+// D-145: every saved copy of the data is labelled with its client, so a browser never shows another client's data
+export const DATA_CLIENT = 'arag';
+/** Old data without a label was always Arag's (the only client then). */
+export const isOwnData = (d) => !d?.client || d.client === DATA_CLIENT;
 
 /** Demo history starts on the 1st of the month three months back (e.g. 01/08 when today is in November),
  *  so the demo has many complete bill periods (D-50). */
