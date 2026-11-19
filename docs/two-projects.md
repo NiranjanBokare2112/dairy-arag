@@ -7,7 +7,7 @@ This guide is the same in both folders. Each folder's own settings are in its **
 |---|---|---|
 | Client | आरग दूध संकलन केंद्र | मल्लेवाडी शेतकरी दूध उत्पादक व पुरवठा सह. संस्था मर्या. |
 | Folder | `F:\Dairy-Arag` (today `F:\Dairy`) | `F:\Dairy-mallewadi` |
-| GitHub (= its Vercel site) | `dairy-pr` | `dairy-sd-sample` |
+| GitHub (= its Vercel site) | `dairy-arag` | `dairy-sd-sample` |
 | Dev server / test port | 5173 / 5174 | 5175 / 5176 |
 | App version (`sw.js`) | `arag-vNNN` | `mallewadi-vNNN` |
 | Decisions | `docs/decisions.md` (D-numbers, shared) | the same, plus `docs/mallewadi-decisions.md` (M-numbers) |

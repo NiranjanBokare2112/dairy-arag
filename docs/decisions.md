@@ -258,7 +258,7 @@ These were chosen while building the frontend. None adds a dependency. Rules mar
 - Print: report spacing tightened so a full shift fits one A4 page; long farmer lists flow onto the next page instead of being cut.
 
 ## D-142 — Two clients, two folders, guarded deploys (2026-11-18)
-Arag (`dairy-pr`) and Mallewadi (`dairy-sd-sample`) each have their own folder, repo, Vercel site, brand and data. Each folder's `project.json` says which client it is.
+Arag (`dairy-arag`, renamed from `dairy-pr` on 19/11/2026) and Mallewadi (`dairy-sd-sample`) each have their own folder, repo, Vercel site, brand and data. Each folder's `project.json` says which client it is.
 `scripts/project-check.mjs` runs in the git pre-push hook (`.githooks/pre-push`, `core.hooksPath`), as the Vercel build command and in `/push`. It refuses the wrong repo, the other client's name or demo data, and a wrong app-version prefix.
 Functional changes are made in Arag first; Mallewadi takes them with `/sync-from-arag` (cherry-pick, keeping its own files). While the Supabase database is shared, only Arag writes to it. Guide: `docs/two-projects.md`.
 

@@ -6,7 +6,7 @@ Read `project.json` and `docs/two-projects.md` first.
 0. If `project.json` → `role` is `main` (the Arag folder), stop and say: "Run /sync-from-arag in the Mallewadi folder."
 1. `git status --short` must be clean (except untracked test data). If not, stop and ask me to commit or put the work aside.
 2. If there is no `arag` remote, add it fetch-only:
-   `git remote add arag https://github.com/NiranjanBokare2112/dairy-pr.git` and `git remote set-url --push arag NO_PUSH`.
+   `git remote add arag https://github.com/NiranjanBokare2112/dairy-arag.git` and `git remote set-url --push arag NO_PUSH`.
    Then `git fetch arag`.
 3. List the commits in `<syncedFromArag>..arag/main` (oldest first) with one line each, and tell me what will come in.
 4. Cherry-pick them one by one with `git cherry-pick -x <hash>`. On a conflict:

@@ -4,7 +4,7 @@ Client project of **Bokare Technologies**. This file is the standing brief: read
 
 ## 0. Which project is this folder (read first)
 
-This is the **Arag** folder (`project.json`: id `arag`, repo `dairy-pr`, dev port 5173, test port 5174, version `arag-vNNN`). It is the **main** project.
+This is the **Arag** folder (`project.json`: id `arag`, repo `dairy-arag`, dev port 5173, test port 5174, version `arag-vNNN`). It is the **main** project.
 The same app also runs for **Mallewadi** in `F:\Dairy-mallewadi` (repo `dairy-sd-sample`). The rules are in `docs/two-projects.md`:
 - Make every functional change here first, then `/push`. Mallewadi takes it with `/sync-from-arag`.
 - Never edit, copy to or push to the Mallewadi folder or repo from here. Never put Mallewadi's name, logo or data in this folder.
