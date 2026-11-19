@@ -29,3 +29,10 @@ export const allowedFor = (user, path) => user.role !== 'operator' || !Array.isA
   || !OPERATOR_PAGES.some((n) => n.path === path); // pages outside the menu (receipts…) follow their own role rules
 /** Menu for a user (or a role, for old callers). */
 export const navFor = (who) => { const user = typeof who === 'string' ? { role: who } : who; return NAV.filter((n) => n.roles.includes(user.role) && allowedFor(user, n.path)); };
+/** Sidebar sections (D-144): daily work, farmers & money, management; मदत sits at the bottom. NAV order is kept inside a group. */
+const GROUP = {'/dashboard': 'daily', '/collection': 'daily', '/ledger': 'daily', '/expenses': 'daily', '/dispatch': 'daily', '/buyers': 'daily', '/farmers': 'people', '/billing': 'people', '/messages': 'people', '/rates': 'admin', '/schemes': 'admin', '/doctors': 'admin', '/settings': 'admin', '/staff': 'admin', '/audit': 'admin', '/help': 'help', '/support': 'daily'};
+export const NAV_GROUPS = ['daily', 'people', 'admin'];
+export const navGroups = (items) => {
+  const by = (g) => items.filter((n) => (GROUP[n.path] || 'admin') === g);
+  return { groups: NAV_GROUPS.map((g) => ({ id: g, items: by(g) })).filter((g) => g.items.length), bottom: by('help') };
+};

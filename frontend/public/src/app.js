@@ -6,7 +6,7 @@ import { html, mount, $ } from './core/dom.js';
 import { t, getLang, setLang } from './core/i18n.js';
 import { icon } from './core/icons.js';
 import { brandLogo, toast, errorText } from './core/ui.js';
-import { navFor, allowedFor } from './core/nav.js';
+import { navFor, allowedFor, navGroups } from './core/nav.js';
 import { enhanceSelects, watchSelects } from './core/select.js';
 import { watchTables } from './core/tables.js';
 import { applyFont, savedFont } from './core/fonttest.js';
@@ -44,6 +44,7 @@ import help, { supportPage } from './pages/help.js';
 import myHelp from './pages/my-help.js';
 import buyersPage from './pages/buyers.js';
 import staff from './pages/staff.js';
+import { reveal, sidenavIntro } from './core/motion.js';
 
 route('/welcome', welcome);
 route('/login', login);
@@ -104,7 +105,10 @@ function chrome(r) {
     <button class="btn btn-ghost btn-sm lang" data-lang>${getLang() === 'mr' ? 'EN' : 'मरा'}</button>
     <span class="who">${user.name} · ${t('role.' + user.role)}</span>
     <button class="btn btn-ghost btn-sm" data-logout title="${t('nav.logout')}">${icon('logout', 20)}<span class="sr-only">${t('nav.logout')}</span></button>`);
-  mount($('#sidenav'), html`${items.map((n) => link(n, 'side-link'))}`);
+  const { groups, bottom } = navGroups(items); // D-144: grouped sidebar
+  mount($('#sidenav'), html`${groups.map((g) => html`${groups.length > 1 ? html`<p class="side-group">${t('nav.group.' + g.id)}</p>` : ''}${g.items.map((n) => link(n, 'side-link'))}`)}
+    <div class="side-foot">${bottom.map((n) => link(n, 'side-link'))}</div>`);
+  sidenavIntro($('#sidenav')); // D-143: items slide in once per visit
   // phone bar: up to 4 main pages + "अधिक" with every other page of the role (D-52)
   const bar = items.filter((n) => n.bottom?.includes(user.role)).slice(0, 4);
   const rest = items.filter((n) => !bar.includes(n));
@@ -167,6 +171,7 @@ async function render() {
     if (seq !== renderSeq) return; // user navigated away while this page was loading
     enhanceSelects(host); // styled dropdowns before the page shows (no flash of the plain ones)
     view.replaceChildren(host);
+    if (!soft && !tabSwitch) reveal(host); // D-143: cards and pictures rise into view on a page's first showing
     view.classList.remove('is-updating');
     shown = { path: r.path, pattern: r.pattern, user: user?.id };
     if (soft) {

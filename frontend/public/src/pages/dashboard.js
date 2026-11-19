@@ -2,6 +2,7 @@
 // The range lives in the URL (#/dashboard?range=7 or ?from=…&to=…) so refresh and back keep it.
 // Period figures follow the filter; balances (owed to farmers, advances, unbilled feed) are always "as of now".
 // Charts are inline SVG / CSS, no chart library.
+import { longDate } from '../core/datepicker.js';
 import { api } from '../api/index.js';
 import { html, mount, on } from '../core/dom.js';
 import { t } from '../core/i18n.js';
@@ -20,7 +21,7 @@ import { dashLayout } from '../core/dashlayout.js';
 export default {
   title: 'nav.dashboard',
   roles: ['owner'],
-  async render(el, { query }) {
+  async render(el, { query, user }) {
     const today = todayIST();
     const range = rangeFromQuery(query, today);
     const [d, center] = await Promise.all([api.dashboard({ from: range.from, to: range.to }), api.center()]);
@@ -105,24 +106,24 @@ export default {
       // D-117: money in one row — owed to farmers, paid to them, advance and feed to come back
       money: () => { const p = d.payouts || {};
         return html`<section class="dash-sec">${head('dash.m.title')}<div class="stats dash-po">
-          ${stat(t('dash.po.owed'), fmt.rs(p.owedPaise || 0), t('dash.po.owedSub', { n: p.owedFarmers || 0 }), 'blue')}
-          ${stat(t('dash.m.paid'), fmt.rs((d.payments?.cashPaise || 0) + (d.payments?.upiPaise || 0)), t('dash.m.paidSub'), 'good')}
-          ${stat(t('dash.m.advance'), fmt.rs(d.advanceOutstandingPaise), t('dash.m.advanceSub'))}
-          ${stat(t('dash.m.feed'), fmt.rs(d.feedUnbilledPaise), t('dash.m.feedSub'))}</div>
+          ${stat(t('dash.po.owed'), fmt.rs(p.owedPaise || 0), t('dash.po.owedSub', { n: p.owedFarmers || 0 }), 'blue', 'wallet')}
+          ${stat(t('dash.m.paid'), fmt.rs((d.payments?.cashPaise || 0) + (d.payments?.upiPaise || 0)), t('dash.m.paidSub'), 'good', 'check')}
+          ${stat(t('dash.m.advance'), fmt.rs(d.advanceOutstandingPaise), t('dash.m.advanceSub'), '', 'rupee')}
+          ${stat(t('dash.m.feed'), fmt.rs(d.feedUnbilledPaise), t('dash.m.feedSub'), '', 'sack')}</div>
         </section>`; },
       milk: () => html`<div class="stats stats-milk dash-sec">
-        ${stat(t('dash.litresTotal'), fmt.litres(d.litresX100) + ' ' + t('unit.l'), days > 1 ? t('dash.perDay', { l: fmt.litres(d.avgPerDayX100) }) : t('dash.farmersPoured', { n: d.farmers }), 'blue')}
+        ${stat(t('dash.litresTotal'), fmt.litres(d.litresX100) + ' ' + t('unit.l'), days > 1 ? t('dash.perDay', { l: fmt.litres(d.avgPerDayX100) }) : t('dash.farmersPoured', { n: d.farmers }), 'blue', 'milk')}
         ${['buffalo', 'cow'].map((m) => { const x = milkOf(m);
-          return stat(t('dash.litresOf', { milk: fmt.milk(m) }), fmt.litres(x.l) + ' ' + t('unit.l'), t('dash.milkShare', { p: d.litresX100 ? Math.round((x.l * 100) / d.litresX100) : 0, a: fmt.rs(x.a) }), m === 'buffalo' ? 'milk-buf' : 'milk-cow'); })}
+          return stat(t('dash.litresOf', { milk: fmt.milk(m) }), fmt.litres(x.l) + ' ' + t('unit.l'), t('dash.milkShare', { p: d.litresX100 ? Math.round((x.l * 100) / d.litresX100) : 0, a: fmt.rs(x.a) }), m === 'buffalo' ? 'milk-buf' : 'milk-cow', 'drop'); })}
       </div>`,
       kpis: () => { const cards = [
-          show('kpi.purchase') && stat(t('dash.purchase'), fmt.rs(d.amountPaise), t('dash.entries', { n: d.entries })),
-          show('kpi.profit') && (pr.hasDairyChart ? stat(t('dash.profitChart'), fmt.rs(pr.profitPaise), t('dash.profitChartSub', { rev: fmt.rs(pr.revenuePaise), cost: fmt.rs(pr.costPaise) }), pr.profitPaise >= 0 ? 'good' : 'warn')
-            : stat(t('dash.profitChart'), '—', html`<a href="#/rates?side=dairy">${t('dash.addDairyChart')}</a>`)),
-          show('kpi.perLitre') && stat(t('dash.profitPerL'), pr.coveredX100 ? fmt.rs(Math.round((pr.profitPaise * 100) / pr.coveredX100)) : '—', t('dash.profitPerLSub'), pr.profitPaise >= 0 ? 'good' : 'warn'),
-          show('kpi.avgRate') && stat(t('dash.avgRate'), d.litresX100 ? fmt.rs(Math.round((d.amountPaise * 100) / d.litresX100)) : '—', t('dash.avgRateSub')),
-          show('kpi.quality') && stat(t('dash.avgQuality'), `${fmt.hundredths(d.avgFatX100)} / ${fmt.hundredths(d.avgSnfX100)}`, t('dash.fatSnf')),
-          show('kpi.farmers') && stat(t('dash.farmersCount'), d.farmers),
+          show('kpi.purchase') && stat(t('dash.purchase'), fmt.rs(d.amountPaise), t('dash.entries', { n: d.entries }), '', 'receipt'),
+          show('kpi.profit') && (pr.hasDairyChart ? stat(t('dash.profitChart'), fmt.rs(pr.profitPaise), t('dash.profitChartSub', { rev: fmt.rs(pr.revenuePaise), cost: fmt.rs(pr.costPaise) }), pr.profitPaise >= 0 ? 'good' : 'warn', 'chart')
+            : stat(t('dash.profitChart'), '—', html`<a href="#/rates?side=dairy">${t('dash.addDairyChart')}</a>`, '', 'chart')),
+          show('kpi.perLitre') && stat(t('dash.profitPerL'), pr.coveredX100 ? fmt.rs(Math.round((pr.profitPaise * 100) / pr.coveredX100)) : '—', t('dash.profitPerLSub'), pr.profitPaise >= 0 ? 'good' : 'warn', 'rupee'),
+          show('kpi.avgRate') && stat(t('dash.avgRate'), d.litresX100 ? fmt.rs(Math.round((d.amountPaise * 100) / d.litresX100)) : '—', t('dash.avgRateSub'), '', 'grid'),
+          show('kpi.quality') && stat(t('dash.avgQuality'), `${fmt.hundredths(d.avgFatX100)} / ${fmt.hundredths(d.avgSnfX100)}`, t('dash.fatSnf'), '', 'drop'),
+          show('kpi.farmers') && stat(t('dash.farmersCount'), d.farmers, '', '', 'users'),
         ].filter(Boolean);
         return cards.length ? html`<div class="stats dash-sec">${cards}</div>` : ''; },
       balances: () => html`<section class="dash-sec">${head('dash.balancesNow')}<div class="stats">
@@ -180,8 +181,11 @@ export default {
     };
 
     mount(el, html`
-      <div class="page-head"><h1>${t('nav.dashboard')}</h1><span class="muted">${t('dash.cycle', { a: fmt.date(d.cycle.start), b: fmt.date(d.cycle.end) })}</span>
-        <a class="btn btn-ghost dash-print" href="#/report?date=${range.to}&shift=all">${icon('print', 18)} ${t('dash.printReport')}</a></div>
+      <header class="dash-hero">
+        <div class="dash-hero-text"><p class="dash-hello">${t('dash.hello', { name: user?.name || '' })}</p><h1>${t('nav.dashboard')}</h1>
+          <p class="dash-hero-meta"><span>${icon('clock', 16)} ${longDate(todayIST())}</span><span>${icon('bill', 16)} ${t('dash.cycle', { a: fmt.date(d.cycle.start), b: fmt.date(d.cycle.end) })}</span></p></div>
+        <a class="btn dash-print" href="#/report?date=${range.to}&shift=all">${icon('print', 18)} ${t('dash.printReport')}</a>
+      </header>
 
       <section class="card dash-filter" aria-label="${t('dash.filter')}">
         <div class="chips" role="group" aria-label="${t('dash.filter')}">

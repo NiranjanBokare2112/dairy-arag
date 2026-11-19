@@ -1,0 +1,4 @@
+#!/bin/sh
+# Pushing = deploying (Vercel builds each repo). Refuse a push that would send this client's app to the
+# wrong repo, or another client's name/data to this one. See docs/two-projects.md and project.json.
+exec node "$(git rev-parse --show-toplevel)/scripts/project-check.mjs" --remote-url "$2"

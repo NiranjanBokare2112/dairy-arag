@@ -66,3 +66,6 @@ frontend/.dev-shared-db-*.json
 # Demo package for another laptop (contains the test data) and generated test-data files
 demo-package/
 scripts/db/test-data-*.json
+
+# Security audit reports (D-142 audit, 19/11/2026): describe attack paths — keep on this PC only
+security_audit/

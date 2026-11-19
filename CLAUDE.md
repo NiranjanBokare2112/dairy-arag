@@ -2,6 +2,15 @@
 
 Client project of **Bokare Technologies**. This file is the standing brief: read it before every task.
 
+## 0. Which project is this folder (read first)
+
+This is the **Arag** folder (`project.json`: id `arag`, repo `dairy-pr`, dev port 5173, test port 5174, version `arag-vNNN`). It is the **main** project.
+The same app also runs for **Mallewadi** in `F:\Dairy-mallewadi` (repo `dairy-sd-sample`). The rules are in `docs/two-projects.md`:
+- Make every functional change here first, then `/push`. Mallewadi takes it with `/sync-from-arag`.
+- Never edit, copy to or push to the Mallewadi folder or repo from here. Never put Mallewadi's name, logo or data in this folder.
+- Pushing deploys. The pre-push hook, the Vercel build and `/push` all run `node scripts/project-check.mjs`.
+- The Supabase database is shared while testing, and only this folder runs migrate, seed or restore on it.
+
 ## 1. The client and the problem
 
 - Client: **आरग दूध संकलन केंद्र** (Arag Dudh Sankalan Kendra), a new milk collection center in Arag village, Tal. Miraj, Dist. Sangli, Maharashtra 416401. Mobile 9158435304.
@@ -92,6 +101,6 @@ arag-dudh-sankalan/
 ## 9. Working guides and shortcuts
 
 - Folder rules, read automatically when working there: `frontend/CLAUDE.md` (test mode, texts, app version bump, browser checks) and `backend/CLAUDE.md` (three databases, safety rules, migrations, RLS on Supabase).
-- Slash commands (`.claude/commands/`): `/test` (all tests), `/demo-data <date>` (demo data + laptop package), `/push` (secret check → commit → push), `/db-check` (PC vs Supabase, read-only).
+- Slash commands (`.claude/commands/`): `/sync-from-arag` (Mallewadi: take Arag's functional changes), `/test` (all tests), `/demo-data <date>` (demo data + laptop package), `/push` (secret check → commit → push), `/db-check` (PC vs Supabase, read-only).
 - Subagents (`.claude/agents/`): `code-reviewer` (review changes for bugs, security and this project's rules — report only) and `ui-designer` (screens and visual design within the brand). Ask for them by name, e.g. "use the code-reviewer on today's changes".
 - VS Code: Terminal → Run Task — dev server, frontend / backend / all tests, DB checks, PC backup, demo data (`.vscode/tasks.json`, local only).

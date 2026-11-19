@@ -1,4 +1,4 @@
-import { whatsappIcon } from './icons.js';
+import { whatsappIcon, icon } from './icons.js';
 // Toasts, dialogs and small shared widgets.
 import { html, mount, $ } from './dom.js';
 import { t } from './i18n.js';
@@ -76,8 +76,8 @@ export function brandLogo(size, { name, tagline, alt = '' }) {
 
 export const empty = (text) => html`<div class="empty">${text}</div>`;
 
-export const stat = (label, value, sub = '', tone = '') => html`
-  <div class="stat ${tone}"><div class="stat-label">${label}</div><div class="stat-value">${value}</div>${sub ? html`<div class="stat-sub">${sub}</div>` : ''}</div>`;
+export const stat = (label, value, sub = '', tone = '', ic = '') => html`
+  <div class="stat ${tone} ${ic ? 'has-ic' : ''}">${ic ? html`<span class="stat-ic" aria-hidden="true">${icon(ic, 20)}</span>` : ''}<div class="stat-label">${label}</div><div class="stat-value">${value}</div>${sub ? html`<div class="stat-sub">${sub}</div>` : ''}</div>`;
 
 /** Segmented control (large touch). */
 export const seg = (name, options, value) => html`<div class="seg" role="radiogroup">${options.map(([v, label]) => html`

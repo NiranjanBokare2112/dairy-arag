@@ -256,3 +256,31 @@ These were chosen while building the frontend. None adds a dependency. Rules mar
 - Now, for a shift + milk type without a dispatch entry, the dairy amount is **estimated**: litres = collected − sold here, × the dairy rate chart rate for that milk's average Fat/SNF, else the last rate the dairy paid for that milk (same as the dispatch form, D-139). The box reads **अंदाजे नफा**, the dairy rows are marked "(अंदाजे)" in italics, they count in "दूध गेले" and the balance, and a note asks to enter the dispatch — once entered, the exact figures replace the estimate.
 - With no rate at all, that milk is left out of the profit ("नफा (पाठवलेल्या दुधावर)"), or the box shows "—" — never a false loss. "तोटा" appears only for a real loss.
 - Print: report spacing tightened so a full shift fits one A4 page; long farmer lists flow onto the next page instead of being cut.
+
+## D-142 — Two clients, two folders, guarded deploys (2026-11-18)
+Arag (`dairy-pr`) and Mallewadi (`dairy-sd-sample`) each have their own folder, repo, Vercel site, brand and data. Each folder's `project.json` says which client it is.
+`scripts/project-check.mjs` runs in the git pre-push hook (`.githooks/pre-push`, `core.hooksPath`), as the Vercel build command and in `/push`. It refuses the wrong repo, the other client's name or demo data, and a wrong app-version prefix.
+Functional changes are made in Arag first; Mallewadi takes them with `/sync-from-arag` (cherry-pick, keeping its own files). While the Supabase database is shared, only Arag writes to it. Guide: `docs/two-projects.md`.
+
+## D-143 — Gentle motion on the website and the app (2026-11-19)
+- **Website:** the headline words rise in one after another, followed by the line below and the buttons. The farm picture uncovers itself from the top and settles in. Sections, cards and pictures fade up as they scroll into view. Nav links get a growing underline on hover, and the steps lift on hover.
+- **App:** the cards and stat tiles of a page rise in on its first showing, but not on refreshes or tab switches. Buttons lift slightly on hover.
+- **Sidebar:** items slide in once per visit. Hover sweeps a light-blue band across with a small icon nudge, and the current page has a green accent bar.
+- **Rules:** opacity and transform only, so it stays smooth on cheap phones. Everything is off when the phone asks for reduced motion. Nothing is hidden when printing.
+- **Code:** `src/core/motion.js` (selectors, no page markup changes) plus the D-143 blocks in `app.css` and `site.css`.
+
+## D-144 — A more attractive dashboard and a grouped sidebar (2026-11-19)
+- **Dashboard banner:** a welcome banner ("नमस्कार, <name>", today's date, the bill period) with the print button replaces the plain title.
+- **Tiles:** every milk and money tile has a small icon chip, coloured by meaning (blue, green for good, amber for warning, cow green and buffalo blue). The main tiles have a soft blue gradient, and numbers count up once when they first show.
+- **Section titles:** an accent bar. The net profit row of नफा हिशोब is a highlighted band.
+- **Sidebar (PC):**
+  - Grouped under दैनंदिन काम / शेतकरी व पैसे / व्यवस्थापन, with icons in rounded tiles.
+  - The current page has a blue gradient pill.
+  - मदत sits at the bottom. Items never shrink; on a short screen the sidebar scrolls with a thin bar. (The user card was dropped: the top bar already shows the name and role.)
+  - Groups are shown only when a person has items in more than one.
+  - The phone bottom bar and "अधिक" keep the old order.
+- **Code:**
+  - `stat()` takes an optional icon;
+  - `navGroups()` in `core/nav.js`;
+  - `countUp` in `core/motion.js`;
+  - the D-144 block in `app.css`.

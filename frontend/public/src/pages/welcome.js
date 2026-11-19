@@ -52,7 +52,7 @@ export default {
 
       <section class="hero">
         <div class="hero-top">
-          <h1>${t('site.hero.title').split(', ').map((w, i, a) => html`<span class="nb">${w}${i < a.length - 1 ? ',' : ''}</span> `)}</h1>
+          <h1>${t('site.hero.title').split(', ').map((w, i, a) => html`<span class="nb" style="--i:${i}">${w}${i < a.length - 1 ? ',' : ''}</span> `)}</h1>
           <div class="hero-pic">
             <img src="./assets/img/farm-scene.jpg" srcset="./assets/img/farm-scene-800.jpg 800w, ./assets/img/farm-scene.jpg 1600w" sizes="(max-width: 900px) 100vw, 1100px"
               alt="${t('site.hero.imgAlt')}" width="1600" height="667" fetchpriority="high">
