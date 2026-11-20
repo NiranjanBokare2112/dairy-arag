@@ -292,3 +292,10 @@ In test/demo mode each browser keeps its own copy of the data and only loaded th
 - On start, data of another client is discarded, the phone is logged out, and it loads this client's demo data. This also applies to the dev server's shared copy and the demo file.
 - Unlabelled old data counts as Arag's in Arag, and as Mallewadi's in Mallewadi only if it already carries Mallewadi's name.
 - No manual clearing is needed on phones.
+
+## D-146 — No flicker on refresh (2026-11-19)
+Frame recordings of a refresh showed that the full entrance replayed every time: the sidebar slide, the card fades, the count-up from 0 and the website headline. On top of that, the Marathi font arrived late, so the text was redrawn and the website header button jumped from two lines to one.
+**Fix:**
+- The entrance plays **once per browser tab** (`sessionStorage` `motion.seen`). A refresh shows the page at once (`html.no-intro`), and moving between pages keeps the gentle reveal.
+- The four main Mukta Devanagari files (400/600/700/800) are preloaded in `index.html`. That is no extra download, only earlier.
+- **Result:** the dashboard refresh went from 126 screen changes to 7, and the website is drawn in the right font from the first frame.

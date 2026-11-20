@@ -9,6 +9,11 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="./assets/img/apple-touch-icon.png">
+<!-- D-146: fonts first, so the page is not redrawn (and does not jump) when they arrive -->
+<link rel="preload" href="./assets/fonts/mukta-400-devanagari.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="./assets/fonts/mukta-600-devanagari.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="./assets/fonts/mukta-700-devanagari.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="./assets/fonts/mukta-800-devanagari.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="./assets/fonts/mukta.css">
 <link rel="stylesheet" href="./src/styles/app.css">
 <link rel="stylesheet" href="./src/styles/print.css">

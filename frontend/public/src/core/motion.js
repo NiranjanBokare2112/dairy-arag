@@ -4,6 +4,14 @@
 
 const REDUCED = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+// D-146: the entrance (headline, sidebar, cards, count-up) plays once per browser tab. After that a refresh shows the page
+// straight away — replaying it on every reload looked like flicker. Moving between pages keeps the gentle reveal.
+const SEEN_KEY = 'motion.seen';
+let seen = false;
+try { seen = sessionStorage.getItem(SEEN_KEY) === '1'; sessionStorage.setItem(SEEN_KEY, '1'); } catch { /* private mode: play as usual */ }
+if (seen && typeof document !== 'undefined') document.documentElement.classList.add('no-intro');
+let quietFirst = seen; // skip the reveal of the first page drawn after a refresh
+
 // What rises into view on scroll. Items in the same grid get a small stagger (--rv-i).
 const TARGETS = [
   // public website + farmer page
@@ -29,6 +37,7 @@ const observer = () => (io ||= new IntersectionObserver((entries) => {
 /** Mark the elements under `root` to reveal as they scroll into view. Safe to call on every first render of a page. */
 export function reveal(root) {
   if (REDUCED || !root || typeof IntersectionObserver !== 'function') return;
+  if (quietFirst) { quietFirst = false; return; }
   const mark = (el, cls) => {
     if (el.classList.contains('rv') || el.dataset.rvDone) return;
     el.dataset.rvDone = '1';
@@ -44,7 +53,7 @@ export function reveal(root) {
 /** Slide the sidebar items in once per visit (not on every page change). */
 let sideDone = false;
 export function sidenavIntro(nav) {
-  if (REDUCED || sideDone || !nav) return;
+  if (REDUCED || sideDone || seen || !nav) return;
   sideDone = true;
   [...nav.children].forEach((a, i) => a.style.setProperty('--sn-i', i));
   nav.classList.add('sn-intro');
