@@ -303,3 +303,7 @@ Frame recordings of a refresh showed that the full entrance replayed every time:
 ## D-147 — Font tester removed from the Arag website (2026-11-21)
 The "Aa फॉन्ट / Mukta (सध्याचा)" dropdown (D-133) is gone. It was in the bottom-left of the website, and the module `core/fonttest.js`, its styles and the `site.fontTest` / `site.fontMissing` texts are removed with it. Everyone sees Mukta. A font picked earlier with the tester is forgotten on the next visit.
 Also: `tests/payouts.test.mjs` runs on a pinned clock (18/11/2026, 12:00 IST). On the first day of a bill period (1st / 11th / 21st) nothing is owed yet, which is correct, but it made the test fail on those dates.
+
+## D-148 — Vercel must build from the repository root (2026-11-21)
+A deploy failed with "Cannot find module /vercel/path0/backend/scripts/project-check.mjs": the Vercel project's **Root Directory was set to `backend`**. Vercel suggests that folder because it holds a Python API. The site is `frontend/public` from the repository root (`vercel.json`), so **Root Directory must be empty**.
+The build command first checks this, and if it is wrong it prints the exact setting to change instead of a "module not found" error.
