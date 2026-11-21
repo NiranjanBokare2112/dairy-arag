@@ -9,9 +9,7 @@ import { brandLogo, toast, errorText } from './core/ui.js';
 import { navFor, allowedFor, navGroups } from './core/nav.js';
 import { enhanceSelects, watchSelects } from './core/select.js';
 import { watchTables } from './core/tables.js';
-import { applyFont, savedFont } from './core/fonttest.js';
-
-applyFont(savedFont()); // D-133: a font chosen in the website's font tester stays on in this browser
+try { localStorage.removeItem('arag.fontTest'); } catch { /* D-147: the font tester is gone; a font picked with it is forgotten (Mukta for everyone) */ }
 
 import welcome from './pages/welcome.js';
 import login from './pages/login.js';

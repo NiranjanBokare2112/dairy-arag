@@ -299,3 +299,7 @@ Frame recordings of a refresh showed that the full entrance replayed every time:
 - The entrance plays **once per browser tab** (`sessionStorage` `motion.seen`). A refresh shows the page at once (`html.no-intro`), and moving between pages keeps the gentle reveal.
 - The four main Mukta Devanagari files (400/600/700/800) are preloaded in `index.html`. That is no extra download, only earlier.
 - **Result:** the dashboard refresh went from 126 screen changes to 7, and the website is drawn in the right font from the first frame.
+
+## D-147 — Font tester removed from the Arag website (2026-11-21)
+The "Aa फॉन्ट / Mukta (सध्याचा)" dropdown (D-133) is gone. It was in the bottom-left of the website, and the module `core/fonttest.js`, its styles and the `site.fontTest` / `site.fontMissing` texts are removed with it. Everyone sees Mukta. A font picked earlier with the tester is forgotten on the next visit.
+Also: `tests/payouts.test.mjs` runs on a pinned clock (18/11/2026, 12:00 IST). On the first day of a bill period (1st / 11th / 21st) nothing is owed yet, which is correct, but it made the test fail on those dates.

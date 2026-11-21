@@ -2,6 +2,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 const store = new Map();
+// The payout rules depend on the bill period: on its first day (1st / 11th / 21st) nothing is owed yet, which is right but
+// made this test fail on those dates. Pin the clock to a mid-period day (18/11/2026, 12:00 IST) so it gives the same result every day.
+const RealDate = Date; const SHIFT = new RealDate('2026-11-18T06:30:00Z').getTime() - RealDate.now();
+globalThis.Date = class extends RealDate { constructor(...a) { super(...(a.length ? a : [RealDate.now() + SHIFT])); } static now() { return RealDate.now() + SHIFT; } };
 globalThis.localStorage = { getItem: (k) => (store.has(k) ? store.get(k) : null), setItem: (k, v) => store.set(k, String(v)), removeItem: (k) => store.delete(k) };
 const { api } = await import('../public/src/api/mock.js');
 const { anchorDate, isDue, nextPayDate, applyLimits, validPref } = await import('../public/src/lib/payout.js');

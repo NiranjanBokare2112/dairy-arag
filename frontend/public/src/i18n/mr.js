@@ -1420,8 +1420,6 @@ export default {
   'dp.prevYear': 'मागील वर्ष',
   'dp.nextYear': 'पुढील वर्ष',
   'dp.backToDays': 'दिवसांकडे परत',
-  'site.fontTest': 'फॉन्ट',
-  'site.fontMissing': 'हा फॉन्ट या संगणकावर नाही — Mukta दिसत आहे',
   'login.sendOtp': 'OTP पाठवा',
   'login.staffDemo': 'डेमो पिन: मालक 1234 · ऑपरेटर 1111 (चाचणीत OTP स्क्रीनवर दिसतो)',
   'login.testOtp': 'चाचणी मोड — खरा संदेश जात नाही. तुमचा OTP: {o}',

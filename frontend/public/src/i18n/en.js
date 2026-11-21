@@ -1420,8 +1420,6 @@ export default {
   'dp.prevYear': 'Previous year',
   'dp.nextYear': 'Next year',
   'dp.backToDays': 'Back to days',
-  'site.fontTest': 'Font',
-  'site.fontMissing': 'This font is not on this computer — showing Mukta',
   'login.sendOtp': 'Send OTP',
   'login.staffDemo': 'Demo PINs: owner 1234 · operator 1111 (in test mode the OTP shows on screen)',
   'login.testOtp': 'Test mode — no real message is sent. Your OTP: {o}',

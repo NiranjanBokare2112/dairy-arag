@@ -2,7 +2,6 @@
 // Login sits in the top-right corner. Owner-editable details (name, message, photo,
 // collection timings) come from center settings; everything else from i18n.
 import { api } from '../api/index.js';
-import { FONTS, savedFont, applyFont, fontAvailable } from '../core/fonttest.js';
 import { html, mount, $ } from '../core/dom.js';
 import { t, getLang, setLang } from '../core/i18n.js';
 import { icon, whatsappIcon } from '../core/icons.js';
@@ -153,19 +152,7 @@ export default {
         <div class="foot-brand">${brandLogo(52, { name: c.name, tagline: t('brand.tagline') })}<div><b>${c.name}</b><small>${t('brand.tagline')}</small></div></div>
         <div class="foot-meta"><span>© ${new Date().getFullYear()} ${c.name}</span><span>${t('site.footer.made')}</span></div>
       </footer>
-      <div class="font-test" role="group" aria-label="${t('site.fontTest')}">
-        <label><span>Aa ${t('site.fontTest')}</span>
-          <select data-font-test>${FONTS.map((f) => html`<option value="${f.id}" ${f.id === savedFont() ? 'selected' : ''}>${f.label}</option>`)}</select></label>
-        <small data-font-note hidden></small>
-      </div>
     </div>`);
-
-    // D-133: font tester — the page (and the app) switches to the chosen font at once
-    const fontSel = $('[data-font-test]', el); const fontNote = $('[data-font-note]', el);
-    const showFont = async (id) => { const f = applyFont(id); fontNote.hidden = true;
-      if (f.local && !(await fontAvailable(f))) { fontNote.textContent = t('site.fontMissing'); fontNote.hidden = false; } };
-    fontSel.addEventListener('change', () => showFont(fontSel.value));
-    if (savedFont() !== 'mukta') showFont(savedFont());
 
     // Header gets a solid background once the page scrolls.
     mountCollectionSim($('[data-sim]', el)); // not awaited: the page shows at once, the animation loads in
