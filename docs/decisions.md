@@ -307,3 +307,7 @@ Also: `tests/payouts.test.mjs` runs on a pinned clock (18/11/2026, 12:00 IST). O
 ## D-148 — Vercel must build from the repository root (2026-11-21)
 A deploy failed with "Cannot find module /vercel/path0/backend/scripts/project-check.mjs": the Vercel project's **Root Directory was set to `backend`**. Vercel suggests that folder because it holds a Python API. The site is `frontend/public` from the repository root (`vercel.json`), so **Root Directory must be empty**.
 The build command first checks this, and if it is wrong it prints the exact setting to change instead of a "module not found" error.
+
+## D-149 — The deploy guard accepts a renamed repo's old name (2026-11-21)
+`dairy-arag` was renamed from `dairy-pr`. GitHub redirects the old name to the same repository, but a Vercel project connected before the rename can still report `dairy-pr`, and the guard then refused Arag's deploy.
+`project.json` can now list `repoAliases` (Arag: `NiranjanBokare2112/dairy-pr`), and `scripts/project-check.mjs` accepts the repo or one of its former names. The other client's repo is still refused: Arag is never accepted for `dairy-sd-sample`, and Mallewadi never for `dairy-arag` / `dairy-pr`.

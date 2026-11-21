@@ -5,6 +5,7 @@
   "about": "Main project: every functional change is made and pushed here first; Mallewadi pulls it with /sync-from-arag. See docs/two-projects.md.",
   "folder": "F:\\Dairy-Arag (today F:\\Dairy until renamed)",
   "repo": "NiranjanBokare2112/dairy-arag",
+  "repoAliases": ["NiranjanBokare2112/dairy-pr"],
   "devPort": 5173,
   "testPort": 5174,
   "swPrefix": "arag-v",

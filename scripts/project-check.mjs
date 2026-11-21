@@ -30,7 +30,9 @@ const norm = (u) => String(u || '').toLowerCase().replace(/\.git$/, '').replace(
 let target = arg('--remote-url');
 if (!target && deploy && process.env.VERCEL_GIT_REPO_SLUG) target = `${process.env.VERCEL_GIT_REPO_OWNER}/${process.env.VERCEL_GIT_REPO_SLUG}`;
 if (!target && !deploy) { try { target = execSync('git remote get-url origin', { cwd: ROOT, stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim(); } catch { /* no git */ } }
-if (target) check(norm(target).endsWith(norm(P.repo)), `repo: ${P.repo}`, `repo: this is the ${P.id} folder, but it would go to "${target}" — ${P.id} belongs only in ${P.repo}`);
+// a renamed GitHub repo keeps redirecting from its old name, and Vercel may still report the old one (D-149)
+const names = [P.repo, ...(P.repoAliases || [])];
+if (target) check(names.some((n) => norm(target).endsWith(norm(n))), `repo: ${P.repo}`, `repo: this is the ${P.id} folder, but it would go to "${target}" — ${P.id} belongs only in ${P.repo}`);
 else ok.push('repo: not known here (skipped)');
 
 // 2. The app's name everywhere it is published
